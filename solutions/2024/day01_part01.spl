@@ -6,6 +6,5 @@
     | rex "^\d+\s+(?<y>\d+)"
     | sort 0 y
 ]
-| table x y
 | eval diff = abs(x - y)
 | stats sum(diff)
