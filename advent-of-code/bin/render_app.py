@@ -1,3 +1,4 @@
+import os
 import subprocess
 from pathlib import Path
 
@@ -22,10 +23,14 @@ def render_templates(app: Path, spl_files: Path):
 def reload_splunk_app(app: Path):
     subprocess.run(
         [
-            f"/opt/splunk/bin/splunk _internal call /services/apps/local/{app.stem}/_reload",
-            "-auth admin:$SPLUNK_PASSWORD",
+            "/opt/splunk/bin/splunk",
+            "_internal",
+            "call",
+            "/services/apps/local/{app.stem}/_reload",
+            "-auth",
+            f"admin:{os.environ['SPLUNK_PASSWORD']}",
         ],
-        shell=True,
+        stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
         check=True,
     )
