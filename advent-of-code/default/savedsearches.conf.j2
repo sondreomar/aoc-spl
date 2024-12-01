@@ -1,0 +1,5 @@
+{% for f in savedsearches -%}
+{% import f as spl %}
+[{{ f }}]
+search = {{ spl | trim | replace("\n", "\\\n") }}
+{% endfor -%}

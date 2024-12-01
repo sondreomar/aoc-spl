@@ -1,0 +1,40 @@
+{
+    "name": "advent-of-code-spl",
+    "image": "splunk/splunk:9.3.2",
+    "overrideCommand": false,
+    "postAttachCommand": "python3 advent-of-code/bin/render_app.py",
+    "remoteUser": "splunk",
+    "containerEnv": {
+        "SPLUNK_START_ARGS": "--accept-license",
+        "SPLUNK_PASSWORD": "splunkdev"
+    },
+    "mounts": [
+        "source=${localWorkspaceFolder}/advent-of-code,target=/opt/splunk/etc/apps/advent-of-code,type=bind,consistency=cached"
+    ],
+    "forwardPorts": [
+        8000,
+        8089
+    ],
+    "portsAttributes": {
+        "8000": {
+            "label": "Splunk Web"
+        },
+        "8089": {
+            "label": "Splunk REST"
+        }
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "Splunk.splunk",
+                "arcsector.vscode-splunk-search-linter",
+                "arcsector.vscode-splunk-search-syntax",
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "charliermarsh.ruff",
+                "wholroyd.jinja",
+                "esbenp.prettier-vscode"
+            ]
+        }
+    }
+}
