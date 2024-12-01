@@ -6,7 +6,5 @@
     | stats c by y
     | eval x = y
 ]
-| eval
-    similarity = x * c
-| stats
-    sum(similarity)
+| eval similarity = x * c
+| stats sum(similarity)
