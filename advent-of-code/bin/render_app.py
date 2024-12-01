@@ -38,10 +38,12 @@ def reload_splunk_app(app: Path):
 
 def main():
     render_templates(APP, SOLUTIONS)
+    if not os.environ["SPLUNK_HOME"]:
+        exit()
     try:
         reload_splunk_app(APP)
-    except subprocess.SubprocessError:
-        pass
+    except subprocess.SubprocessError as e:
+        print(e)
     else:
         print(f"{APP} reloaded")
 
