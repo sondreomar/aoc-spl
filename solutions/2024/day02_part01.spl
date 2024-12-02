@@ -2,14 +2,14 @@
 | rex max_match=0 "(?<x>\d+)"
 | eval
     i = mvrange(0, mvcount(x)),
-    i = mvmap(
+    diff = mvmap(
         i,
         tonumber(mvindex(x, i + 1)) - tonumber(mvindex(x, i))
     ),
     is_safe_report = case(
-        mvcount(mvfilter(i < 0 and i >= -3 )) == mvcount(i), 1,
-        mvcount(mvfilter(i > 0 and i <= +3 )) == mvcount(i), 1,
-        true(),                                              0
+        mvcount(mvfilter(diff < 0 and diff >= -3 )) == mvcount(diff), 1,
+        mvcount(mvfilter(diff > 0 and diff <= +3 )) == mvcount(diff), 1,
+        true(),                                                       0
     )
 | stats
     sum(is_safe_report)
