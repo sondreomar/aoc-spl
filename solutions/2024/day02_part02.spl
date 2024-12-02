@@ -1,15 +1,15 @@
 | inputlookup day02.csv
-| eval data = input
-| appendpipe [
-    | rex field=data max_match=0 "(?<x>\d+)"
-    | eval
-        i = mvrange(0, mvcount(x)),
-        data = mvmap(
+| rex field=input max_match=0 "(?<x>\d+)"
+| eval
+    i = mvrange(0, mvcount(x)),
+    data = mvappend(
+        input,
+        mvmap(
             i,
             mvjoin(mvappend(if(i == 0, null(), mvindex(x, 0, i - 1)), mvindex(x, i + 1, -1)), " ")
         )
-    | stats c as _ by input data
-]
+    )
+| stats c as _ by input data
 | rex field=data max_match=0 "(?<x>\d+)"
 | eval
     i = mvrange(0, mvcount(x)),
