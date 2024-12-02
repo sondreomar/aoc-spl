@@ -17,7 +17,7 @@ def render_templates(app: Path, spl_files: Path):
     for path in APP.rglob("*.j2"):
         template = env.get_template(path.relative_to(app).as_posix())
         with open(path.with_suffix(""), "w") as f:
-            f.write(env.get_template(template).render(savedsearches=savedsearches))
+            f.write(env.get_template(template).render(savedsearches=sorted(savedsearches)))
 
 
 def reload_splunk_app(app: Path):
