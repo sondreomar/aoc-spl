@@ -38,7 +38,7 @@ def reload_splunk_app(app: Path):
 
 def main():
     render_templates(APP, SOLUTIONS)
-    if not os.environ["SPLUNK_HOME"]:
+    if not "SPLUNK_HOME" in os.environ:
         exit()
     try:
         reload_splunk_app(APP)
