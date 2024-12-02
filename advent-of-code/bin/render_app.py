@@ -26,7 +26,7 @@ def reload_splunk_app(app: Path):
             "/opt/splunk/bin/splunk",
             "_internal",
             "call",
-            "/services/apps/local/{app.stem}/_reload",
+            f"/services/apps/local/{app.stem}/_reload",
             "-auth",
             f"admin:{os.environ['SPLUNK_PASSWORD']}",
         ],
