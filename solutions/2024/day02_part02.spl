@@ -1,16 +1,16 @@
 | inputlookup day02.csv
-| eval id = _raw
-| rex max_match=0 "(?<x>\d+)"
+| eval data = input
 | appendpipe [
+    | rex field=data max_match=0 "(?<x>\d+)"
     | eval
         i = mvrange(0, mvcount(x)),
-        _raw = mvmap(
+        data = mvmap(
             i,
             mvjoin(mvappend(if(i == 0, null(), mvindex(x, 0, i - 1)), mvindex(x, i + 1, -1)), " ")
         )
-    | stats c as _ by id _raw
-    | rex max_match=0 "(?<x>\d+)"
+    | stats c as _ by input data
 ]
+| rex field=data max_match=0 "(?<x>\d+)"
 | eval
     i = mvrange(0, mvcount(x)),
     diff = mvmap(
@@ -22,5 +22,6 @@
         mvcount(mvfilter(diff > 0 and diff <= +3 )) == mvcount(diff), 1,
         true(),                                                       0
     )
-| stats max(is_safe_report) by id
-| stats sum(max(is_safe_report))
+| fields input x diff is_safe_report
+| stats max(is_safe_report) as is_safe_report by input
+| stats sum(is_safe_report)

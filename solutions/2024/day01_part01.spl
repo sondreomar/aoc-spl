@@ -1,10 +1,11 @@
 | inputlookup day01.csv
-| rex "^(?<x>\d+)"
+| rex field=input "^(?<x>\d+)"
 | sort 0 x
 | appendcols [
     | inputlookup day01.csv
-    | rex "^\d+\s+(?<y>\d+)"
+    | rex field=input "^\d+\s+(?<y>\d+)"
     | sort 0 y
 ]
 | eval diff = abs(x - y)
+| fields x y diff
 | stats sum(diff)

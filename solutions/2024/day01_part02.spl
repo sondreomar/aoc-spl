@@ -1,10 +1,11 @@
 | inputlookup day01.csv
-| rex "^(?<x>\d+)"
+| rex field=input "^(?<x>\d+)"
 | join type=outer x [
     | inputlookup day01.csv
-    | rex "^\d+\s+(?<y>\d+)"
+    | rex field=input "^\d+\s+(?<y>\d+)"
     | stats c by y
     | eval x = y
 ]
 | eval similarity = x * c
+| fields x y similarity
 | stats sum(similarity)
