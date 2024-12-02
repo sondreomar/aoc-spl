@@ -1,0 +1,26 @@
+| inputlookup day02.csv
+| eval id = _raw
+| rex max_match=0 "(?<x>\d+)"
+| appendpipe [
+    | eval
+        i = mvrange(0, mvcount(x)),
+        _raw = mvmap(
+            i,
+            mvjoin(mvappend(if(i == 0, null(), mvindex(x, 0, i - 1)), mvindex(x, i + 1, -1)), " ")
+        )
+    | stats c as _ by id _raw
+    | rex max_match=0 "(?<x>\d+)"
+]
+| eval
+    i = mvrange(0, mvcount(x)),
+    i = mvmap(
+        i,
+        tonumber(mvindex(x, i + 1)) - tonumber(mvindex(x, i))
+    ),
+    is_safe_report = case(
+        mvcount(mvfilter(i < 0 and i >= -3 )) == mvcount(i), 1,
+        mvcount(mvfilter(i > 0 and i <= +3 )) == mvcount(i), 1,
+        true(),                                              0
+    )
+| stats max(is_safe_report) by id
+| stats sum(max(is_safe_report))
