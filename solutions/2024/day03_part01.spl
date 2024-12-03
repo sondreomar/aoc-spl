@@ -1,0 +1,8 @@
+| inputlookup day03.csv
+| rex field=input max_match=0 "mul\((?<x>\d+,\d+)\)"
+| eval
+    result = mvmap(
+        x,
+        tonumber(mvindex(split(x, ","), 0)) * tonumber(mvindex(split(x, ","), 1))
+    )
+| stats sum(result)
