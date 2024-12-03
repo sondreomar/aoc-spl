@@ -1,18 +1,8 @@
 | inputlookup day03.csv
-| stats list(input) as input
-| eval input = mvjoin(input, "")
 | rex field=input max_match=0 "(?<data>(do\(\)|don't\(\)|mul\(\d+,\d+\)))"
 | fields data
-| eval
-    i = mvrange(0, mvcount(data)),
-    padding = len(tostring(mvcount(data))),
-    instructions = mvmap(
-        i,
-        printf("%0".padding."d:%s", i, mvindex(data, i))
-    )
-| stats c as _ by instructions
-| rex field=instructions "^\d+:(mul\((?<x>\d+),(?<y>\d+)\)|(?<condition>do(n't)?\(\)))"
+| mvexpand data
+| rex field=data "^(mul\((?<x>\d+),(?<y>\d+)\)|(?<condition>do(n't)?\(\)))"
 | streamstats last(condition)
-| fillnull value=do() last(condition)
-| eval result = if('last(condition)' == "do()", x * y, null())
+| eval result = if('last(condition)' == "don't()", null(), x * y)
 | stats sum(result)
