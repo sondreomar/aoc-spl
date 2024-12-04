@@ -6,11 +6,12 @@
 | eval
     data = mvmap(data, replace(data, "^\d+:", "")),
     i = mvrange(1, mvcount(data) - 1)
-| foreach mode=multivalue itemstr=<<I>> i [
+| foreach mode=multivalue i [
     | eval
-        prev = split(mvindex(data, '<<I>>' - 1), ""),
-        this = split(mvindex(data, '<<I>>'), ""),
-        next = split(mvindex(data, '<<I>>' + 1), ""),
+        i = '<<ITEM>>',
+        prev = split(mvindex(data, i - 1), ""),
+        this = split(mvindex(data, i), ""),
+        next = split(mvindex(data, i + 1), ""),
         j = mvrange(1, mvcount(this) - 1),
         x = mvmap(
             j,
