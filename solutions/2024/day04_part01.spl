@@ -1,0 +1,35 @@
+| inputlookup day04.csv
+| streamstats c
+| eventstats c as total
+| eval
+    x = input,
+    d1 = printf("%0".c."d", 0).input.printf("%0".(total - c + 1)."d", 0),
+    d2 = printf("%0".(total - c + 1)."d", 0).input.printf("%0".c."d", 0)
+| foreach x d1 d2 [
+    | eval
+        <<FIELD>> = replace('<<FIELD>>', "0", "."),
+        data.<<FIELD>> = printf("%0".len(total)."d:%s", c, '<<FIELD>>')
+]
+| stats values(data.*) as *
+| foreach * [ | eval <<FIELD>> = mvmap('<<FIELD>>', replace('<<FIELD>>', "^\d+:", "")) ]
+| foreach x d1 d2 [
+    | eval i = mvrange(0, len(mvindex('<<FIELD>>', 0)))
+    | foreach mode=multivalue itemstr=<<I>> i [
+        | eval
+            <<FIELD>>.transposed = mvappend(
+                '<<FIELD>>.transposed',
+                mvjoin(mvmap('<<FIELD>>', mvindex(split('<<FIELD>>', ""), '<<I>>')), "")
+            )
+    ]
+    | fields - i
+]
+| rename
+    x.transposed as y
+    *.transposed as *
+| foreach x y d1 d2 [
+    | rex field=<<FIELD>> max_match=0 "(?<_<<FIELD>>_xmas>XMAS)"
+    | rex field=<<FIELD>> max_match=0 "(?<_<<FIELD>>_samx>SAMX)"
+    | eval matches = mvappend(matches, '_<<FIELD>>_xmas', '_<<FIELD>>_samx')
+]
+| eval matches = mvcount(matches)
+| fields matches *
