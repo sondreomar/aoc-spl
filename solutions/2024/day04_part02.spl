@@ -1,0 +1,25 @@
+| inputlookup day04.csv
+| streamstats c
+| eventstats c as total
+| eval data = printf("%0".len(total)."d:%s", c, input)
+| stats values(data) as data
+| eval
+    data = mvmap(data, replace(data, "^\d+:", "")),
+    i = mvrange(1, mvcount(data) - 1)
+| foreach mode=multivalue itemstr=<<I>> i [
+    | eval
+        prev = split(mvindex(data, '<<I>>' - 1), ""),
+        this = split(mvindex(data, '<<I>>'), ""),
+        next = split(mvindex(data, '<<I>>' + 1), ""),
+        j = mvrange(1, mvcount(this) - 1),
+        x = mvmap(
+            j,
+            if(
+                mvindex(this, j) == "A",
+                mvindex(prev, j - 1).mvindex(prev, j + 1).mvindex(next, j - 1).mvindex(next, j + 1),
+                null()
+            )
+        ),
+        matches = sum(matches, mvmap(x, if(x in ("SSMM", "MSMS", "MMSS", "SMSM"), 1, 0)))
+]
+| fields matches data *
