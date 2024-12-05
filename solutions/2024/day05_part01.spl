@@ -1,0 +1,23 @@
+| inputlookup day05.csv
+| where isnotnull(input)
+| rex field=input "(?<order>\d+\|\d+)"
+| rex field=input "(?<update>(\d+,)+\d+)"
+| fields input order update
+| eventstats values(order) as order
+| where isnotnull(update)
+| eval update = split(update, ",")
+| foreach mode=multivalue order [
+    | eval
+        order = split('<<ITEM>>', "|"),
+        a = mvindex(order, 0),
+        b = mvindex(order, 1),
+        is_item_sorted = case(
+            !(a in (update) and b in (update)),    1,
+            mvfind(update, a) < mvfind(update, b), 1,
+            true(),                                0
+        ),
+        is_sorted = min(is_sorted, is_item_sorted)
+]
+| where is_sorted == 1
+| eval middle = mvindex(update, floor(mvcount(update) / 2))
+| stats sum(middle)
