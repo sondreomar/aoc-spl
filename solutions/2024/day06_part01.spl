@@ -1,0 +1,37 @@
+| inputlookup day06.csv
+| streamstats c
+| eventstats c as total
+| eval data = printf("%0".len(total)."d:%s", c, input)
+| stats values(data) as data
+| eval
+    data = mvmap(data, replace(data, "^\d+:", "")),
+    data = mvmap(data, replace(data, "\^", "<")),
+    y = mvfind(data, "<"),
+    x = mvfind(split(mvindex(data, y), ""), "<"),
+    i = mvrange(0, 10000)
+| foreach mode=multivalue i [
+    | eval
+        i = '<<ITEM>>',
+        ``` turn right by transposing map ```
+        x_len = len(mvindex(data, 0)),
+        y_len = mvcount(data),
+        j = mvrange(0, x_len),
+        k = mvreverse(mvdedup(mvmap(j, mvreverse(mvrange(j, j + y_len * x_len, x_len))))),
+        data = mvmap(k, mvindex(split(mvjoin(data, ""), ""), k)),
+        data = mvmap(j, substr(mvjoin(data, ""), j * y_len + 1, y_len)),
+        x = y,
+        y = mvfind(data, "<"),
+        ``` totally sane walk with regex ```
+        path = replace(mvindex(data, y), ".*((^|#)[^#<]+<).*", "\1"),
+        walk = replace(replace(path, "[^#]", "X"), "^#.", "#<"),
+        data = mvappend(
+            mvindex(data, 0, y - 1),
+            replace(mvindex(data, y), path, walk),
+            mvindex(data, y + 1, -1)
+        ),
+        ``` data will be null once guard leaves map ```
+        necessary_iterations = if(isnull(data), necessary_iterations, i + 1),
+        result = coalesce(data, result)
+]
+| eval unique_positions = len(replace(mvjoin(result, ""), "[^X]+", ""))
+| fields data result unique_positions necessary_iterations *
