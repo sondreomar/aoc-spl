@@ -1,0 +1,118 @@
+| inputlookup day06.csv
+| streamstats c
+| eventstats c as total
+| eval data = printf("%0".len(total)."d:%s", c, input)
+| stats values(data) as data
+| eval
+    data = mvmap(data, replace(data, "^\d+:", "")),
+    w = len(mvindex(data, 0)),
+    h = mvcount(data),
+    trail = "X",
+    obstacles = mvappend("#", "O"),
+    directions = mvappend("^", ">", "v", "<"),
+    vx = mvappend("+0", "+1", "+0", "-1"),
+    vy = mvappend("-1", "+0", "+1", "+0"),
+    find_guard = "[\^>v<]",
+    y = mvfind(data, find_guard),
+    x = mvfind(split(mvindex(data, y), ""), find_guard),
+    guard = substr(mvindex(data, y), x + 1, 1)
+
+``` simulate guard path ```
+| eval i = mvrange(0, 10000)
+| foreach mode=multivalue i [
+    | eval
+        d = mvfind(directions, guard),
+        next_x = x + tonumber(mvindex(vx, d)),
+        next_y = y + tonumber(mvindex(vy, d)),
+        next = if(
+            min(next_x, next_y) >= 0 and next_x < w and next_y < h,
+            substr(mvindex(data, next_y), next_x + 1, 1),
+            null()
+        ),
+        guard = if(
+            next in (obstacles),
+            mvindex(directions, (d + 1) % mvcount(directions)),
+            guard
+        ),
+        position = y.",".x,
+        history = if(
+            next in (obstacles) or position in (history),
+            history,
+            mvappend(history, position)
+        ),
+        x = if(isnull(next) or next in (obstacles), x, next_x),
+        y = if(isnull(next) or next in (obstacles), y, next_y)
+]
+| eval i = mvrange(0, mvcount(data))
+| foreach mode=multivalue i [
+    | eval
+        i = '<<ITEM>>',
+        row = split(mvindex(data, i), ""),
+        j = mvrange(0, mvcount(row)),
+        row_history = mvmap(history, if(match(history, "^".i), mvindex(split(history, ","), 1), null())),
+        result = mvappend(result, mvjoin(mvmap(
+            j,
+            case(
+                i == y AND j == x,  guard,
+                j in (row_history), trail,
+                true(),             mvindex(row, j)
+            )
+        ), ""))
+]
+| eval unique_locations = mvcount(history)
+| fields data result unique_locations history guard d x y w h trail obstacles directions vx vy find_guard
+
+``` expand for each element in history ```
+| fields data history w h trail obstacles directions vx vy find_guard
+| mvexpand history
+
+``` manually increment to test mem limits ```
+| streamstats c
+| eval segment = 500, i = 0
+| where c > segment * i AND c <= segment + segment * i
+
+``` generate new maps with added obstacle ```
+| eval
+    test_x = mvindex(split(history, ","), 1),
+    test_y = mvindex(split(history, ","), 0),
+    y = mvfind(data, find_guard),
+    x = mvfind(split(mvindex(data, y), ""), find_guard),
+    guard = substr(mvindex(data, y), x + 1, 1),
+    i = mvrange(0, mvcount(data)),
+    data = mvmap(
+        i,
+        if(
+            i == test_y,
+            substr(mvindex(data, i), 0, test_x).mvindex(obstacles, 1).substr(mvindex(data, i), test_x + 2),
+            mvindex(data, i)
+        )
+    )
+| where !(test_x == x AND test_y == y)
+| fields c data test_x test_y guard x y w h trail obstacles directions vx vy find_guard
+
+``` simulate guard path ```
+| eval
+    iterations = 10000,
+    i = mvrange(0, iterations)
+| foreach mode=multivalue i [
+    | eval
+        d = mvfind(directions, guard),
+        next_x = x + tonumber(mvindex(vx, d)),
+        next_y = y + tonumber(mvindex(vy, d)),
+        next = if(
+            min(next_x, next_y) >= 0 and next_x < w and next_y < h,
+            substr(mvindex(data, next_y), next_x + 1, 1),
+            null()
+        ),
+        guard = if(
+            next in (obstacles),
+            mvindex(directions, (d + 1) % mvcount(directions)),
+            guard
+        ),
+        x = if(isnull(next) or next in (obstacles), x, next_x),
+        y = if(isnull(next) or next in (obstacles), y, next_y),
+        i = if(isnull(next), i, '<<ITEM>>' + 1),
+        data = if(isnull(next), null(), data)
+]
+| where i == iterations
+| stats c
