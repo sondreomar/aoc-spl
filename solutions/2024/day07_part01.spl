@@ -1,0 +1,18 @@
+| inputlookup day07.csv
+| rex field=input "^(?<target>\d+):(?<y>.*)"
+| eval
+    x = target,
+    y = split(trim(y), " "),
+    i = mvrange(1, mvcount(y))
+| foreach mode=multivalue i [
+    | eval
+        i = '<<ITEM>>',
+        last = mvindex(y, i * -1),
+        add = mvmap(x, x - last),
+        mul = mvmap(x, if(x > 0, x / last, null())),
+        x = mvappend(add, mul),
+        x = mvfilter(isint(x) and x >= 0)
+]
+| fields input target x y
+| eval result = max(mvmap(y, if(y in (x), target, 0)))
+| stats sum(result)
