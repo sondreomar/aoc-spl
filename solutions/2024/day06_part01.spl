@@ -5,52 +5,59 @@
 | stats values(data) as data
 | eval
     data = mvmap(data, replace(data, "^\d+:", "")),
+    w = len(mvindex(data, 0)),
+    h = mvcount(data),
     trail = "X",
     obstacles = mvappend("#", "O"),
     directions = mvappend("^", ">", "v", "<"),
-    move_x = mvappend("+0", "+1", "+0", "-1"),
-    move_y = mvappend("-1", "+0", "+1", "+0"),
-    find_guard = replace("(".mvjoin(directions, "|").")", "\\^", "\\^"),
-    i = mvrange(0, 10000)
+    vx = mvappend("+0", "+1", "+0", "-1"),
+    vy = mvappend("-1", "+0", "+1", "+0"),
+    find_guard = "[\^>v<]",
+    y = mvfind(data, find_guard),
+    x = mvfind(split(mvindex(data, y), ""), find_guard),
+    guard = substr(mvindex(data, y), x + 1, 1)
+
+``` simulate guard path ```
+| eval i = mvrange(0, 10000)
 | foreach mode=multivalue i [
     | eval
-        i = '<<ITEM>>',
-        y = mvfind(data, find_guard),
-        row = mvindex(data, y),
-        x = mvfind(split(row, ""), find_guard),
-        guard = substr(row, x + 1, 1),
-        direction = mvfind(directions, guard),
-        next_x = x + tonumber(mvindex(move_x, direction)),
-        next_y = y + tonumber(mvindex(move_y, direction)),
-        next_move = if(
-            next_x in (mvrange(0, len(row))) AND next_y in (mvrange(0, mvcount(data))),
+        d = mvfind(directions, guard),
+        next_x = x + tonumber(mvindex(vx, d)),
+        next_y = y + tonumber(mvindex(vy, d)),
+        next = if(
+            min(next_x, next_y) >= 0 and next_x < w and next_y < h,
             substr(mvindex(data, next_y), next_x + 1, 1),
             null()
         ),
-        next_guard = if(
-            next_move in (obstacles),
-            mvindex(directions, (mvfind(directions, guard) + 1) % mvcount(directions)),
+        guard = if(
+            next in (obstacles),
+            mvindex(directions, (d + 1) % mvcount(directions)),
             guard
         ),
-        j = mvrange(0, mvcount(data)),
-        data = if(
-            isnull(guard),
-            data,
-            mvmap(
-                j,
-                case(
-                    j < min(y, next_y), mvindex(data, j),
-                    j > max(y, next_y), mvindex(data, j),
-                    next_move in (obstacles), replace(mvindex(data, j), find_guard, next_guard),
-                    isnotnull(next_move) AND j == next_y, (
-                        replace(substr(mvindex(data, j), 0, next_x), find_guard, trail)
-                        + guard
-                        + replace(substr(mvindex(data, j), next_x + 2, len(row) - next_x), find_guard, trail)
-                    ),
-                    true(), replace(mvindex(data, j), find_guard, trail)
-                )
-            )
-        )
+        position = y.",".x,
+        history = if(
+            next in (obstacles) or position in (history),
+            history,
+            mvappend(history, position)
+        ),
+        x = if(isnull(next) or next in (obstacles), x, next_x),
+        y = if(isnull(next) or next in (obstacles), y, next_y)
 ]
-| eval unique_positions = len(replace(mvjoin(data, ""), "[^X]+", ""))
-| fields data unique_positions *
+| eval i = mvrange(0, mvcount(data))
+| foreach mode=multivalue i [
+    | eval
+        i = '<<ITEM>>',
+        row = split(mvindex(data, i), ""),
+        j = mvrange(0, mvcount(row)),
+        row_history = mvmap(history, if(match(history, "^".i), mvindex(split(history, ","), 1), null())),
+        result = mvappend(result, mvjoin(mvmap(
+            j,
+            case(
+                i == y AND j == x,  guard,
+                j in (row_history), trail,
+                true(),             mvindex(row, j)
+            )
+        ), ""))
+]
+| eval unique_locations = mvcount(history)
+| fields data result unique_locations history guard d x y w h trail obstacles directions vx vy find_guard
