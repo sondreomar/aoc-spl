@@ -62,16 +62,9 @@
 | eval unique_locations = mvcount(history)
 | fields data result unique_locations history guard d x y w h trail obstacles directions vx vy find_guard
 
-``` expand for each element in history ```
+``` generate new maps with added obstacle ```
 | fields data history w h trail obstacles directions vx vy find_guard
 | mvexpand history
-
-``` manually increment to test mem limits ```
-| streamstats c
-| eval segment = 500, i = 0
-| where c > segment * i AND c <= segment + segment * i
-
-``` generate new maps with added obstacle ```
 | eval
     test_x = mvindex(split(history, ","), 1),
     test_y = mvindex(split(history, ","), 0),
@@ -111,8 +104,7 @@
         ),
         x = if(isnull(next) or next in (obstacles), x, next_x),
         y = if(isnull(next) or next in (obstacles), y, next_y),
-        i = if(isnull(next), i, '<<ITEM>>' + 1),
-        data = if(isnull(next), null(), data)
+        i = if(isnull(next), i, '<<ITEM>>' + 1)
 ]
 | where i == iterations
 | stats c
