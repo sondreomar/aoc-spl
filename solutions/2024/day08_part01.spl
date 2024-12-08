@@ -1,0 +1,52 @@
+| inputlookup day08.csv
+| streamstats c
+| eventstats c as total
+| eval
+    x = mvrange(0, len(input)),
+    x = mvmap(x, if(mvindex(split(input, ""), x) != ".", x, null())),
+    y = c - 1,
+    data = printf("%0".len(total)."d:%s", c, input)
+| eventstats values(data) as data
+| stats values(data) as data by x y
+| eval
+    _data = mvmap(data, replace(data, "^\d+:", "")),
+    type = substr(mvindex(_data, y), x + 1, 1),
+    a = x.",".y
+| eventstats values(a) as b by type
+| eval b = mvmap(b, nullif(b, a))
+| stats values(data) as data by type a b
+| eval
+    _axy = split(a, ","),
+    ax = mvindex(_axy, 0),
+    ay = mvindex(_axy, 1),
+    _bxy = split(b, ","),
+    bx = mvindex(_bxy, 0),
+    by = mvindex(_bxy, 1),
+    cx = bx + bx - ax,
+    cy = by + by - ay,
+    c = cx.",".cy
+| stats
+    values(data) as data
+    values(c) as c
+| eval
+    data = mvmap(data, replace(data, "^\d+:", "")),
+    h = mvcount(data),
+    w = len(mvindex(data, 0))
+| foreach mode=multivalue c [
+    | eval
+        c = '<<ITEM>>',
+        _cxy = split(c, ","),
+        cx = mvindex(_cxy, 0),
+        cy = mvindex(_cxy, 1),
+        i = mvrange(0, h),
+        data = mvmap(
+            i,
+            if(
+                i != cy or min(cx, cy) < 0 or cx >= w or cy >= h,
+                mvindex(data, i),
+                substr(mvindex(data, i), 0, cx)."#".substr(mvindex(data, i), cx + 2)
+            )
+        )
+]
+| fields data
+| eval antinodes = sum(mvmap(data, mvmap(split(data, ""), if(data == "#", 1, 0))))
