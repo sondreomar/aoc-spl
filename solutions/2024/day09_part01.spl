@@ -1,0 +1,41 @@
+| inputlookup day09.csv
+| eval x = split(input, "")
+| fields x
+| mvexpand x
+| streamstats c
+| eval
+    id = if(c % 2 == 1, floor(c / 2), "."),
+    is_free = 1 - c % 2,
+    i = mvrange(0, x),
+    fs = mvmap(i, id)
+| where isnotnull(fs)
+| fields fs
+| mvexpand fs
+| eventstats c as total
+| streamstats
+    c as a
+    c(eval(fs == ".")) as i
+| eval
+    a = a,
+    i = if(fs == ".", i - 1, null())
+| appendpipe [
+    | rename a as b
+    | where fs != "."
+    | eventstats c as n
+    | streamstats c as i
+    | eval
+        i = n - i,
+        b = i
+    | fields b i fs total
+]
+| eventstats values(fs) as sort by i
+| eval
+    insert = if(fs == ".", mvfilter(sort != "."), mvfilter(sort == ".")),
+    fs = coalesce(insert, fs)
+| eventstats c(insert) as replacements
+| eval replacements = replacements / 2
+| fields orig_fs fs insert a b total replacements
+| where a <= total - replacements or b < replacements
+| streamstats c
+| eval check = (c - 1) * fs
+| stats sum(check) as checksum
