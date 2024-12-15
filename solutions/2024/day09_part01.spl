@@ -5,7 +5,6 @@
 | streamstats c
 | eval
     id = if(c % 2 == 1, floor(c / 2), "."),
-    is_free = 1 - c % 2,
     i = mvrange(0, x),
     fs = mvmap(i, id)
 | where isnotnull(fs)
