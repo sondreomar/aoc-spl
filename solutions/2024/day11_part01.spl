@@ -1,0 +1,22 @@
+| inputlookup day11.csv
+| eval x = split(input, " ")
+| fields x
+| eval
+    [
+        | stats c as i
+        | eval i = mvrange(0, 25), i = mvjoin(mvmap(i, printf("i.%d=0", i)), ",")
+        | return $i
+    ]
+| foreach i.* [
+    | fields x
+    | mvexpand x
+    | eval
+        x = tonumber(x),
+        x = case(
+            x == 0,          1,
+            len(x) % 2 == 0, mvappend(substr(x, 0, len(x) / 2), substr(x, len(x) / 2 + 1, len(x) / 2)),
+            true(),          x * 2024
+        )
+]
+| eval c = mvcount(x)
+| stats sum(c)
