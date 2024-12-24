@@ -1,0 +1,115 @@
+| inputlookup day12.csv
+| eventstats c as h
+| streamstats c as y
+| eval data = printf("%0".len(h)."d:%s", y, input)
+| stats
+    values(data) as data
+    values(y) as y
+| eval
+    data = mvmap(data, replace(data, "^\d+:", "")),
+    i = mvrange(0, len(mvindex(data, 0)) + 2),
+    data = mvappend(
+        mvjoin(mvmap(i, "_"), ""),
+        mvmap(data, "_".data."_"),
+        mvjoin(mvmap(i, "_"), "")
+    ),
+    w = len(mvindex(data, 0)),
+    x = mvrange(1, w - 1),
+    x_pad = len(max(x)),
+    y_pad = len(max(y)),
+    x = mvmap(x, printf("%0".x_pad."d", x)),
+    y = mvmap(y, printf("%0".y_pad."d", y)),
+    xy = mvzip(mvmap(y, x), mvsort(mvmap(x, y)))
+| fields data xy
+| mvexpand xy
+| eval
+    _xy = split(xy, ","),
+    x = tonumber(mvindex(_xy, 0)),
+    y = tonumber(mvindex(_xy, 1)),
+    type = substr(mvindex(data, y + 0), x + 1, 1)
+| eventstats values(xy) as area by type
+| dedup type
+| fields data type area
+| eval
+    vx = mvappend("-1", "+0", "+1", "+0"),
+    vy = mvappend("+0", "-1", "+0", "+1"),
+    i = mvrange(0, mvcount(area)),
+    j = mvrange(0, 4)
+| foreach mode=multivalue i [
+    | eval
+        i = '<<ITEM>>',
+        xy = mvindex(area, i),
+        _pos = split(xy, ","),
+        x = tonumber(mvindex(_pos, 0)),
+        y = tonumber(mvindex(_pos, 1)),
+        xy = x.",".y,
+        neighbours = mvappend(
+            substr(mvindex(data, y + 0), x + 0, 1),
+            substr(mvindex(data, y - 1), x + 1, 1),
+            substr(mvindex(data, y + 0), x + 2, 1),
+            substr(mvindex(data, y + 1), x + 1, 1)
+        ),
+        fragment = mvmap(
+            j,
+            if(mvindex(neighbours, j) == type, j, null())
+        ),
+        fragment = mvmap(
+            fragment,
+            sum(x, tonumber(mvindex(vx, fragment))).",".sum(y, tonumber(mvindex(vy, fragment)))
+        ),
+        fragments = mvappend(fragments, mvjoin(mvappend(xy, fragment), " "))
+]
+| fields data type fragments
+| eval
+    i = mvrange(0, mvcount(fragments))
+| foreach mode=multivalue i [
+    | eval
+        i = '<<ITEM>>',
+        fragment = split(mvindex(fragments, -1), " "),
+        combination = mvdedup(mvmap(
+            fragments,
+            if(mvcount(mvappend(fragment, split(fragments, " "))) != mvcount(mvdedup(mvappend(fragment, split(fragments, " ")))), split(fragments, " "), null())
+        )),
+        pruned_fragments = mvmap(
+            fragments,
+            if(mvcount(mvappend(fragment, split(fragments, " "))) != mvcount(mvdedup(mvappend(fragment, split(fragments, " ")))), null(), fragments)
+        ),
+        fragments = mvappend(
+            mvjoin(combination, " "),
+            pruned_fragments
+        )
+]
+| rename fragments as region
+| fields data type region
+| mvexpand region
+| eval
+    area = mvsort(split(region, " ")),
+    vx = mvappend("-1", "-1", "+0", "+1", "+1", "+1", "+0", "-1", "-1"),
+    vy = mvappend("+0", "-1", "-1", "-1", "+0", "+1", "+1", "+1", "+0"),
+    i = mvrange(0, mvcount(area)),
+    j = mvrange(0, mvcount(vx)),
+    k = mvrange(0, mvcount(vx) - 1, 2)
+| foreach mode=multivalue i [
+    | eval
+        i = '<<ITEM>>',
+        xy = mvindex(area, i),
+        _xy = split(xy, ","),
+        x = mvindex(_xy, 0),
+        y = mvindex(_xy, 1),
+        nb = mvzip(mvmap(vx, x + vx), mvmap(vy, y + vy)),
+        sides = sum(
+            sides,
+            mvmap(
+                k,
+                case(
+                    mvindex(nb, k) in (area) and not mvindex(nb, k + 1) in (area) and mvindex(nb, k + 2) in (area), 1,
+                    not mvindex(nb, k) in (area) and not mvindex(nb, k + 2) in (area),                              1,
+                    true(),                                                                                         0
+                )
+            )
+        )
+        
+]
+| fields data type region area sides
+| eval price = mvcount(area) * sides
+| stats sum(price)
