@@ -10,7 +10,7 @@ from splunklib.searchcommands import Configuration, GeneratingCommand, dispatch
 INPUTS = Path("../aoc/inputs")
 
 
-@Configuration()
+@Configuration(type="reporting", streaming=False)
 class InputAOC(GeneratingCommand):
     def generate(self):
         if not self.fieldnames:
