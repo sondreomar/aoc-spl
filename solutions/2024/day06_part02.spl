@@ -43,12 +43,13 @@
         x = if(isnull(next) or next in (obstacles), x, next_x),
         y = if(isnull(next) or next in (obstacles), y, next_y)
 ]
-| eval i = mvrange(0, mvcount(data))
+| eval
+    i = mvrange(0, mvcount(data)),
+    j = mvrange(0, len(mvindex(data, 0)))
 | foreach mode=multivalue i [
     | eval
         i = '<<ITEM>>',
         row = split(mvindex(data, i), ""),
-        j = mvrange(0, mvcount(row)),
         row_history = mvmap(history, if(match(history, "^".i), mvindex(split(history, ","), 1), null())),
         result = mvappend(result, mvjoin(mvmap(
             j,
