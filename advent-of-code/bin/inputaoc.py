@@ -22,7 +22,7 @@ class InputAOC(GeneratingCommand):
             raise ValueError("File does not exist")
         with open(path) as f:
             for line in f:
-                yield {"_raw": line}
+                yield {"_raw": line.strip()}
 
 
 dispatch(InputAOC, sys.argv, sys.stdin, sys.stdout, __name__)
