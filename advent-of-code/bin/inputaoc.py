@@ -4,7 +4,7 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "lib"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "lib"))
 from splunklib.searchcommands import Configuration, GeneratingCommand, dispatch
 
 INPUTS = Path("../aoc/inputs")
