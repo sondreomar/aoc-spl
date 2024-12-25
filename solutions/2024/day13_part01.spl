@@ -1,0 +1,17 @@
+| inputaoc day13.txt
+| rex "Button A: X\+(?<ax>\d+), Y\+(?<ay>\d+)"
+| rex "Button B: X\+(?<bx>\d+), Y\+(?<by>\d+)"
+| rex "Prize: X=(?<px>\d+), Y=(?<py>\d+)"
+| streamstats last(*) as *
+| search Prize:*
+| table ax ay bx by px py
+| eval
+    b = round(( (py / ay) - (px / ax) ) / ( (-bx / ax) + (by / ay) )),
+    a = round((px / ax) - b * ( bx / ax)),
+    cost = if(
+        a * ax + b * bx == px and a * ay + b * by == py,
+        a * 3 + b,
+        null()
+    )
+| table ax ay bx by px py a b cost
+| stats sum(cost)
