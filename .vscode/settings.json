@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "advent-of-code/bin/lib/"
+    ]
+}
