@@ -50,7 +50,7 @@
     | eval
         i = '<<ITEM>>',
         row = split(mvindex(data, i), ""),
-        row_history = mvmap(history, if(match(history, "^".i), mvindex(split(history, ","), 1), null())),
+        row_history = mvmap(history, if(match(history, "^".i.","), mvindex(split(history, ","), 1), null())),
         result = mvappend(result, mvjoin(mvmap(
             j,
             case(
