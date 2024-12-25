@@ -1,5 +1,5 @@
-| inputlookup day03.csv
-| rex field=input max_match=0 "(?<data>(do\(\)|don't\(\)|mul\(\d+,\d+\)))"
+| inputaoc day03.txt
+| rex max_match=0 "(?<data>(do\(\)|don't\(\)|mul\(\d+,\d+\)))"
 | fields data
 | mvexpand data
 | rex field=data "^(mul\((?<x>\d+),(?<y>\d+)\)|(?<condition>do(n't)?\(\)))"

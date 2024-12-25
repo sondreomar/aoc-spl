@@ -1,11 +1,11 @@
-| inputlookup day08.csv
+| inputaoc day08.txt
 | streamstats c
 | eventstats c as total
 | eval
-    x = mvrange(0, len(input)),
-    x = mvmap(x, if(mvindex(split(input, ""), x) != ".", x, null())),
+    x = mvrange(0, len(_raw)),
+    x = mvmap(x, if(mvindex(split(_raw, ""), x) != ".", x, null())),
     y = c - 1,
-    data = printf("%0".len(total)."d:%s", y, input)
+    data = printf("%0".len(total)."d:%s", y, _raw)
 | eventstats values(data) as data
 | stats values(data) as data by x y
 | eval

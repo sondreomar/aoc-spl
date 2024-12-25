@@ -1,10 +1,10 @@
-| inputlookup day04.csv
+| inputaoc day04.txt
 | streamstats c
 | eventstats c as total
 | eval
-    x = input,
-    d1 = printf("%0".c."d", 0).input.printf("%0".(total - c + 1)."d", 0),
-    d2 = printf("%0".(total - c + 1)."d", 0).input.printf("%0".c."d", 0)
+    x = _raw,
+    d1 = printf("%0".c."d", 0)._raw.printf("%0".(total - c + 1)."d", 0),
+    d2 = printf("%0".(total - c + 1)."d", 0)._raw.printf("%0".c."d", 0)
 | foreach x d1 d2 [
     | eval
         <<FIELD>> = replace('<<FIELD>>', "0", "."),

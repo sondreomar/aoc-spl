@@ -1,6 +1,6 @@
-| inputlookup day09.csv
-| eval x = split(input, "")
-| fields x
+| inputaoc day09.txt
+| eval x = split(_raw, "")
+| table x
 | mvexpand x
 | streamstats c
 | eval

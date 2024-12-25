@@ -1,7 +1,7 @@
-| inputlookup day04.csv
+| inputaoc day04.txt
 | streamstats c
 | eventstats c as total
-| eval data = printf("%0".len(total)."d:%s", c, input)
+| eval data = printf("%0".len(total)."d:%s", c, _raw)
 | stats values(data) as data
 | eval
     data = mvmap(data, replace(data, "^\d+:", "")),

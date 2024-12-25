@@ -1,14 +1,14 @@
-| inputlookup day06.csv
+| inputaoc day06.txt
 | streamstats c
 | eventstats c as total
-| eval data = printf("%0".len(total)."d:%s", c, input)
+| eval data = printf("%0".len(total)."d:%s", c, _raw)
 | stats values(data) as data
 | eval
     data = mvmap(data, replace(data, "^\d+:", "")),
     data = mvmap(data, replace(data, "\^", "<")),
     y = mvfind(data, "<"),
     x = mvfind(split(mvindex(data, y), ""), "<"),
-    i = mvrange(0, 10000)
+    i = mvrange(0, 1000)
 | foreach mode=multivalue i [
     | eval
         i = '<<ITEM>>',

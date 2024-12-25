@@ -1,17 +1,17 @@
-| inputlookup day10.csv
+| inputaoc day10.txt
 | eventstats c as h
 | streamstats c as y
-| eval data = printf("%0".len(h)."d:_%s_", y, input)
+| eval data = printf("%0".len(h)."d:_%s_", y, _raw)
 | eventstats values(data) as data
 | eval
-    i = mvrange(0, len(input) + 2),
+    i = mvrange(0, len(_raw) + 2),
     data = mvappend(
         mvjoin(mvmap(i, "_"), ""),
         mvmap(data, replace(data, "^\d+:", "")),
         mvjoin(mvmap(i, "_"), "")
     ),
     x = mvrange(0, len(mvindex(data, 0))),
-    x = mvmap(x, if(mvindex(split(input, ""), x)  == "0", x + 1, null()))
+    x = mvmap(x, if(mvindex(split(_raw, ""), x)  == "0", x + 1, null()))
 | fields data x y
 | where isnotnull(x)
 | mvexpand x

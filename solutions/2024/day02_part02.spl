@@ -1,15 +1,15 @@
-| inputlookup day02.csv
-| rex field=input max_match=0 "(?<x>\d+)"
+| inputaoc day02.txt
+| rex max_match=0 "(?<x>\d+)"
 | eval
     i = mvrange(0, mvcount(x)),
     data = mvappend(
-        input,
+        _raw,
         mvmap(
             i,
             mvjoin(mvappend(if(i == 0, null(), mvindex(x, 0, i - 1)), mvindex(x, i + 1, -1)), " ")
         )
     )
-| stats c as _ by input data
+| stats c as _ by _raw data
 | rex field=data max_match=0 "(?<x>\d+)"
 | eval
     i = mvrange(0, mvcount(x)),
@@ -22,6 +22,6 @@
         mvcount(mvfilter(diff > 0 and diff <= +3 )) == mvcount(diff), 1,
         true(),                                                       0
     )
-| fields input x diff is_safe_report
-| stats max(is_safe_report) as is_safe_report by input
+| fields _raw x diff is_safe_report
+| stats max(is_safe_report) as is_safe_report by _raw
 | stats sum(is_safe_report)

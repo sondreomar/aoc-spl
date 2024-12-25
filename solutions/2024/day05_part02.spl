@@ -1,8 +1,8 @@
-| inputlookup day05.csv
-| where isnotnull(input)
-| rex field=input "(?<order>\d+\|\d+)"
-| rex field=input "(?<update>(\d+,)+\d+)"
-| fields input order update
+| inputaoc day05.txt
+| where isnotnull(_raw)
+| rex "(?<order>\d+\|\d+)"
+| rex "(?<update>(\d+,)+\d+)"
+| table input order update
 | eventstats values(order) as order
 | where isnotnull(update)
 | eval

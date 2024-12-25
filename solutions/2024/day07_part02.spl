@@ -1,5 +1,5 @@
-| inputlookup day07.csv
-| rex field=input "^(?<target>\d+):(?<y>.*)"
+| inputaoc day07.txt
+| rex "^(?<target>\d+):(?<y>.*)"
 | eval
     y = split(trim(y), " "),
     i = mvrange(0, mvcount(y))
@@ -14,6 +14,6 @@
         a = mvdedup(mvappend(add, mul, con)),
         a = mvmap(a, if(a > target, null(), a))
 ]
-| fields input target a y add mul
+| table input target a y add mul
 | eval result = max(mvmap(y, if(target in (a), target, 0)))
 | stats sum(result)

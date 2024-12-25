@@ -1,6 +1,6 @@
-| inputlookup day11.csv
-| eval x = split(input, " ")
-| fields x
+| inputaoc day11.txt
+| eval x = split(_raw, " ")
+| table x
 | eval
     [
         | stats c as i

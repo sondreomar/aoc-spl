@@ -1,8 +1,9 @@
-| inputlookup day01.csv
-| rex field=input "^(?<x>\d+)"
+| inputaoc day01.txt
+| rex "^(?<x>\d+)"
+| table x
 | join type=outer x [
-    | inputlookup day01.csv
-    | rex field=input "^\d+\s+(?<y>\d+)"
+    | inputaoc day01.txt
+    | rex "^\d+\s+(?<y>\d+)"
     | stats c by y
     | eval x = y
 ]

@@ -1,7 +1,7 @@
-| inputlookup day12.csv
+| inputaoc day12.txt
 | eventstats c as h
 | streamstats c as y
-| eval data = printf("%0".len(h)."d:%s", y, input)
+| eval data = printf("%0".len(h)."d:%s", y, _raw)
 | stats
     values(data) as data
     values(y) as y
