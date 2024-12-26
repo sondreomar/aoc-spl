@@ -1,0 +1,36 @@
+| inputaoc day14.txt
+| rex "p=(?<x>\d+),(?<y>\d+)\sv=(?<vx>[-\d]+),(?<vy>[-\d]+)"
+| eval
+    w = 101,
+    h = 103,
+    seconds = mvrange(0, 10000),
+    p = mvzip(
+        mvmap(seconds, (x + vx * seconds) % w),
+        mvmap(seconds, (y + vy * seconds) % h)
+    ),
+    robot = mvzip(seconds, p)
+| stats
+    c
+    first(w) as w
+    first(h) as h
+    by robot
+| rex field=robot "^(?<seconds>\d+),(?<robot>.*)"
+| stats
+    sum(c) as c
+    values(robot) as robots
+    first(w) as w
+    first(h) as h
+    by seconds
+| where mvcount(robots) == c
+| eval
+    y = mvrange(0, h),
+    x = mvrange(0, w)
+| foreach mode=multivalue y [
+    | eval
+        y = '<<ITEM>>',
+        ebhq = mvappend(
+            ebhq,
+            mvjoin(mvmap(x, if(x.",".y in (robots), "x", ".")), "")
+        )
+]
+| fields ebhq seconds

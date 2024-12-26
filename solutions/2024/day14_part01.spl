@@ -1,0 +1,14 @@
+| inputaoc day14.txt
+| rex "p=(?<x>\d+),(?<y>\d+)\sv=(?<vx>[-\d]+),(?<vy>[-\d]+)"
+| eval
+    w = 101,
+    h = 103,
+    seconds = 100,
+    x = (x + vx * seconds) % w,
+    y = (y + vy * seconds) % h,
+    w_mid = floor(w / 2),
+    h_mid = floor(h / 2),
+    quadrant = case(y < h_mid, "B", y > h_mid, "T").case(x < w_mid, "L", x > w_mid, "R"),
+    quadrant.{quadrant} = 1
+| stats sum(quadrant.*) as *
+| eval safety = BL * BR * TL * TR
