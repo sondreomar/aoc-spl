@@ -1,0 +1,89 @@
+| inputaoc day15.txt
+| where isnotnull(_raw)
+| eval type = if(match(_raw, "#"), "map", "route")
+| eventstats c as h
+| streamstats c as y by type
+| eval data.{type} = printf("%0".len(h)."d:%s", y, _raw)
+| stats values(data.*) as *
+| foreach * [ | eval <<FIELD>> = mvmap('<<FIELD>>', replace('<<FIELD>>', "^\d+:", "")) ]
+| eval
+    h = mvcount(map),
+    w = len(mvindex(map, 0)),
+    map = mvmap(map, split(map, "")),
+    i = mvrange(0, mvcount(map)),
+    char.open = ".",
+    char.wall = "#",
+    char.box = "O",
+    char.robot = "@",
+    walls = mvmap(
+        i,
+        if(mvindex(map, i) == 'char.wall', i, null())
+    ),
+    boxes = mvmap(
+        i,
+        if(mvindex(map, i) == 'char.box', i, null())
+    ),
+    robot = mvfind(map, 'char.robot'),
+    mv = mvappend("^", ">", "v", "<"),
+    v = mvmap(
+        mv,
+        case(
+           mv == "^", -w,
+           mv == ">", +1,
+           mv == "v", +w,
+           mv == "<", -1
+        ) 
+    ),
+    route = mvmap(route, split(route, ""))
+| foreach mode=multivalue route [
+    | eval
+        move = tonumber(mvindex(v, mvfind(mv, '<<ITEM>>'))),
+        path = case(
+            move == -w, mvrange(robot % w,         robot,                    w),
+            move == +1, mvrange(robot + 1,         robot + w - robot % w,    1),
+            move == +w, mvrange(robot + w,         w * h - floor(robot / w), w),
+            move == -1, mvrange(robot - robot % w, robot,                    1)
+        ),
+        path = if(move < 0, mvreverse(path), path),
+        path.walls = mvmap(path, if(path in (walls), path, null())),
+        path.boxes = mvmap(path, if(path in (boxes), path, null())),
+        path = mvmap(
+            path,
+            case(
+                move < 0 and path <= max('path.walls'), null(),
+                move > 0 and path >= min('path.walls'), null(),
+                path in ('path.boxes'),                 null(),
+                true(),                                 path
+            )
+        ),
+        path = mvindex(path, 0),
+        path.boxes = mvmap(
+            'path.boxes',
+            case(
+                move < 0 and 'path.boxes' < path, null(),
+                move > 0 and 'path.boxes' > path, null(),
+                true(),                           'path.boxes'
+            )
+        ),
+        boxes = mvmap(
+            boxes,
+            if(boxes in ('path.boxes') and isnotnull(path), boxes + move, boxes)
+        ),
+        robot = robot + if(isnotnull(path), move, 0)
+]
+| eval
+    map = mvmap(
+        i,
+        case(
+            i in (walls), 'char.wall',
+            i in (boxes), 'char.box',
+            i == robot,   'char.robot',
+            true(),       'char.open'
+        )
+    ),
+    viz = mvmap(
+       mvrange(0, h),
+       mvjoin(mvindex(map, w * h, w - 1 + (w * h)), "")
+    ),
+    gps = sum(mvmap(boxes, floor(boxes / w) * 100 + boxes % w))
+| fields gps viz i map j route walls boxes robot move target action path path.*
