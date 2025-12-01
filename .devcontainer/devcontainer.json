@@ -5,9 +5,9 @@
         "context": ".."
     },
     "postCreateCommand": "uv sync --locked",
-    "postAttachCommand": ".venv/bin/python advent-of-code/bin/render_app.py",
+    "postAttachCommand": ".venv/bin/python app/bin/render_app.py",
     "mounts": [
-        "source=${localWorkspaceFolder}/advent-of-code,target=/opt/splunk/etc/apps/advent-of-code,type=bind,consistency=cached"
+        "source=${localWorkspaceFolder}/app,target=/opt/splunk/etc/apps/advent-of-code,type=bind,consistency=cached"
     ],
     "customizations": {
         "vscode": {
