@@ -1,0 +1,12 @@
+| stats c as x
+| eval x = 50
+| append [
+    | inputaoc 2025-01.txt
+    | rex "^(?<sign>L|R)(?<x>\d+)$"
+    | eval x = case(sign == "L", -1, sign == "R", 1) * x
+    | table _raw x
+]
+| streamstats sum(x)
+| eval dial = abs('sum(x)' % 100)
+| where dial == 0
+| stats c

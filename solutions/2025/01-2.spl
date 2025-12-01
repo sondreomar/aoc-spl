@@ -1,0 +1,21 @@
+| stats c as x
+| eval x = 50
+| append [
+    | inputaoc 2025-01.txt
+    | rex "^(?<sign>L|R)(?<x>\d+)$"
+    | eval x = case(sign == "L", -1, sign == "R", 1) * x
+    | table _raw x
+]
+| streamstats sum(x)
+| eval dial = abs('sum(x)' % 100)
+| streamstats current=false last(dial) as prev_dial
+| eval
+    rotations = floor(abs(x / 100)) + case(
+        dial == 0,                  1,
+        prev_dial == 0,             0,
+        x < 0 and dial > prev_dial, 1,
+        x > 0 and dial < prev_dial, 1,
+        true(),                     0
+    )
+| stats
+    sum(rotations)
