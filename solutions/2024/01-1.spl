@@ -1,9 +1,9 @@
-| inputaoc day01.txt
+| inputaoc 2024-01.txt
 | rex "^(?<x>\d+)"
 | sort 0 x
 | table x
 | appendcols [
-    | inputaoc day01.txt
+    | inputaoc 2024-01.txt
     | rex "^\d+\s+(?<y>\d+)"
     | sort 0 y
 ]

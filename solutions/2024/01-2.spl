@@ -1,8 +1,8 @@
-| inputaoc day01.txt
+| inputaoc 2024-01.txt
 | rex "^(?<x>\d+)"
 | table x
 | join type=outer x [
-    | inputaoc day01.txt
+    | inputaoc 2024-01.txt
     | rex "^\d+\s+(?<y>\d+)"
     | stats c by y
     | eval x = y

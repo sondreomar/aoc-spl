@@ -1,4 +1,4 @@
-| inputaoc day04.txt
+| inputaoc 2024-04.txt
 | streamstats c
 | eventstats c as total
 | eval

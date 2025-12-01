@@ -1,4 +1,4 @@
-| inputaoc day13.txt
+| inputaoc 2024-13.txt
 | rex "Button A: X\+(?<ax>\d+), Y\+(?<ay>\d+)"
 | rex "Button B: X\+(?<bx>\d+), Y\+(?<by>\d+)"
 | rex "Prize: X=(?<px>\d+), Y=(?<py>\d+)"
@@ -6,7 +6,9 @@
 | search Prize:*
 | table ax ay bx by px py
 | eval
-    b = round(( (py / ay) - (px / ax) ) / ( (-bx / ax) + (by / ay) )),
+    px = px + 10000000000000,
+    py = py + 10000000000000,
+    b = round(((py / ay) - (px / ax)) / ((-bx / ax) + (by / ay))),
     a = round((px / ax) - b * ( bx / ax)),
     cost = if(
         a * ax + b * bx == px and a * ay + b * by == py,

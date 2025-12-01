@@ -1,4 +1,4 @@
-| inputaoc day09.txt
+| inputaoc 2024-09.txt
 | eval x = split(_raw, "")
 | table x
 | mvexpand x

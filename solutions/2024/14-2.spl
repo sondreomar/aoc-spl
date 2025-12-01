@@ -1,4 +1,4 @@
-| inputaoc day14.txt
+| inputaoc 2024-14.txt
 | rex "p=(?<x>\d+),(?<y>\d+)\sv=(?<vx>[-\d]+),(?<vy>[-\d]+)"
 | eval
     w = 101,

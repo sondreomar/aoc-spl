@@ -1,4 +1,4 @@
-| inputaoc day07.txt
+| inputaoc 2024-07.txt
 | rex "^(?<target>\d+):(?<y>.*)"
 | eval
     x = target,

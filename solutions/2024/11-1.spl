@@ -1,4 +1,4 @@
-| inputaoc day11.txt
+| inputaoc 2024-11.txt
 | eval x = split(_raw, " ")
 | table x
 | eval

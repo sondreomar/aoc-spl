@@ -1,4 +1,4 @@
-| inputaoc day15.txt
+| inputaoc 2024-15.txt
 | where isnotnull(_raw)
 | eval type = if(match(_raw, "#"), "map", "route")
 | eventstats c as h

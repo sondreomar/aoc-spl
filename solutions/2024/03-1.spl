@@ -1,4 +1,4 @@
-| inputaoc day03.txt
+| inputaoc 2024-03.txt
 | rex max_match=0 "mul\((?<x>\d+,\d+)\)"
 | eval
     result = mvmap(

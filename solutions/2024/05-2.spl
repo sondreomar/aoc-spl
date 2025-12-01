@@ -1,4 +1,4 @@
-| inputaoc day05.txt
+| inputaoc 2024-05.txt
 | where isnotnull(_raw)
 | rex "(?<order>\d+\|\d+)"
 | rex "(?<update>(\d+,)+\d+)"

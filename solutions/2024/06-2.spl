@@ -1,4 +1,4 @@
-| inputaoc day06.txt
+| inputaoc 2024-06.txt
 | streamstats c
 | eventstats c as total
 | eval data = printf("%0".len(total)."d:%s", c, _raw)
