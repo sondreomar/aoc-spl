@@ -1,0 +1,9 @@
+<nav search_view="search" color="#5CC05C">
+  <view name="search" default="true" />
+  <collection label="2025">
+    <saved source="all" match="2025" />
+  </collection>
+  <collection label="2024">
+    <saved source="all" match="2024" />
+  </collection>
+</nav>
