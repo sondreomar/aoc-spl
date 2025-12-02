@@ -1,0 +1,22 @@
+<!-- default.xml is generated from default.xml.j2, do not edit -->
+<nav search_view="search" color="#5CC05C">
+  <view name="search" default="true" />
+  {% set years = {} -%}
+  {% for f in savedsearches -%}
+    {% set parts = f.split('/') -%}
+    {% if parts|length == 2 and parts[0].isdigit() -%}
+      {% set year = parts[0] -%}
+      {% if years.get(year) is none -%}
+        {% set _ = years.update({year: []}) -%}
+      {% endif -%}
+      {% set _ = years[year].append(f) -%}
+    {% endif -%}
+  {% endfor -%}
+  {% for year, items in years|dictsort(reverse=True) -%}
+  <collection label="{{ year }}">
+    {% for item in items|sort -%}
+    <saved name="{{ item }}" />
+    {% endfor -%}
+  </collection>
+  {% endfor -%}
+</nav>
