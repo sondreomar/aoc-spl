@@ -4,7 +4,7 @@ from pathlib import Path
 
 import jinja2
 
-APP = Path("advent-of-code")
+APP = Path("app")
 SOLUTIONS = Path("solutions")
 
 
