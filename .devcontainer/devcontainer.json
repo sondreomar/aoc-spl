@@ -16,7 +16,13 @@
                 "python.defaultInterpreterPath": "/opt/splunk/bin/python3",
                 "ruff.interpreter": [
                     "/opt/splunk/bin/python3"
-                ]
+                ],
+                "python.analysis.extraPaths": [
+                    ".venv/lib/python3.12/site-packages/",
+                    "app/bin/lib/"
+                ],
+                "splunk.commands.splunkRestUrl": "https://localhost:8089",
+                "splunk.commands.enableCertificateVerification": false
             },
             "extensions": [
                 "ms-azuretools.vscode-docker",
