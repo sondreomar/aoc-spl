@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -8,16 +9,47 @@ APP = Path("app")
 SOLUTIONS = Path("solutions")
 
 
-def render_templates(app: Path, spl_files: Path):
+def render_templates(app: Path, spl_path: Path):
     env = jinja2.Environment(
-        loader=jinja2.FileSystemLoader([app, spl_files]),
+        loader=jinja2.FileSystemLoader([app, spl_path]),
         keep_trailing_newline=True,
     )
-    savedsearches = [spl.relative_to(spl_files).as_posix() for spl in spl_files.rglob("*.spl")]
     for path in APP.rglob("*.j2"):
         template = env.get_template(path.relative_to(app).as_posix())
         with open(path.with_suffix(""), "w") as f:
-            f.write(env.get_template(template).render(savedsearches=sorted(savedsearches)))
+            f.write(
+                env.get_template(template).render(
+                    splnbsearches=get_splnbsearches(spl_path),
+                    savedsearches=sorted(get_savedsearches(spl_path)),
+                )
+            )
+
+
+def get_savedsearches(path: Path) -> list[str]:
+    return [spl.relative_to(path).as_posix() for spl in path.rglob("*.spl")]
+
+
+def get_splnbsearches(path: Path) -> dict[str, str]:
+    splnb_searches = {}
+    for f in path.rglob("*.splnb"):
+        splnb_searches.update(splnb_to_searches(f))
+    return splnb_searches
+
+
+def splnb_to_searches(path: Path) -> dict[str, str]:
+    with open(path, "r") as f:
+        cells = [x for line in f.readlines() for x in json.loads(line) if line.strip()]
+        searches = {}
+        for i, cell in enumerate(cells):
+            if cell.get("language") != "splunk_search":
+                continue
+            if cell.get("value").strip() == "":
+                continue
+            key = path.relative_to(SOLUTIONS).as_posix()
+            if len(cells) > 1:
+                key = f"{key}[{i}]"
+            searches[key] = cell.get("value")
+    return searches
 
 
 def reload_splunk_app(app: Path):

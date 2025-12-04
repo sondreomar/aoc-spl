@@ -1,4 +1,8 @@
 # savedsearches.conf is generated from savedsearches.conf.j2, do not edit
+{% for splnb, spl in splnbsearches.items() %}
+[{{ splnb }}]
+search = {{ spl | trim | replace("\n", "\\\n") }}
+{% endfor -%}
 {% for f in savedsearches -%}
 {% import f as spl %}
 [{{ f }}]
