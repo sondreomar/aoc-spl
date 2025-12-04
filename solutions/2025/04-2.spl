@@ -52,8 +52,8 @@
                 tonumber(mvindex(accessible, i)) - if(i == 0, 0, tonumber(mvindex(accessible, i - 1))) - 1
             )."X"
         ),
-        _new = mvappend(_new, substr(_raw, tonumber(max(accessible)) + 1)),
-        _raw = mvjoin(coalesce(_new, _raw), ""),
+        _new = mvappend(_new, substr(_raw, coalesce(tonumber(max(accessible)) + 1, 0))),
+        _raw = mvjoin(_raw, ""),
         result = sum(result, mvcount(accessible))
 ]
 | eval
@@ -62,4 +62,4 @@
         y,
         substr(_raw, y * w + 1, w)
     )
-| table result
+| fields result *
