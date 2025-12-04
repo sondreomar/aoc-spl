@@ -1,5 +1,4 @@
 #!/bin/bash
-
 echo "Waiting for Splunk to start..."
 until curl -sk https://localhost:8089 -u admin:splunkdev --max-time 5 >/dev/null; do
   echo "Waiting for Splunk to be available..."
