@@ -22,7 +22,10 @@
                     "app/bin/lib/"
                 ],
                 "splunk.commands.splunkRestUrl": "https://localhost:8089",
-                "splunk.commands.enableCertificateVerification": false
+                "splunk.commands.enableCertificateVerification": false,
+                "[splunk_search]": {
+                    "editor.tabSize": 4
+                }
             },
             "extensions": [
                 "ms-azuretools.vscode-docker",
