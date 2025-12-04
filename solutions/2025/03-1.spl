@@ -1,0 +1,8 @@
+| inputaoc 2025-03.txt
+| eval
+    x = substr(_raw, 0, len(_raw) - 1),
+    x = max(split(x, "")),
+    y = replace(_raw, printf("^\d*?%s", x), ""),
+    y = max(split(y, "")),
+    jolts = x.y
+| stats sum(jolts)
