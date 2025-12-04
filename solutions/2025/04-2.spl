@@ -1,0 +1,65 @@
+| inputaoc 2025-04.txt
+| streamstats c as y
+| eventstats c as h
+| eval
+    h = h + 2,
+    w = len(_raw) + 2,
+    _raw = printf("%010d:_%s_", y, _raw)
+| eventstats values(_raw) as _raw
+| eval
+    _raw = mvappend(
+        mvjoin(mvmap(mvrange(0, w), "_"), ""),
+        mvmap(_raw, replace(_raw, "^\d+:", "")),
+        mvjoin(mvmap(mvrange(0, w), "_"), "")
+    ),
+    i = mvrange(0, w),
+    x = mvmap(i, if(substr(mvindex(_raw, y), i, 1) == "@", i, null())),
+    xy = mvmap(x, y * w + x),
+    xy = mvsort(mvmap(xy, printf("%010d", xy))),
+    _raw = mvjoin(_raw, "")
+| stats
+    first(_raw) as _raw
+    values(xy) as xy
+    max(w) as w
+    max(h) as h
+| eval
+    i = mvrange(0, max(w, h))
+| foreach mode=multivalue i [
+    | eval
+        accessible = mvmap(
+            xy,
+            if(
+                len(
+                    replace(
+                        substr(_raw, tonumber(xy) - 1, 3)
+                        + substr(_raw, tonumber(xy) - w - 1, 3)
+                        + substr(_raw, tonumber(xy) + w - 1, 3),
+                        "[^@]",
+                        ""
+                    )
+                ) - 1 < 4,
+                xy,
+                null()
+            )
+        ),
+        xy = mvmap(xy, if(xy in (accessible), null(), xy)),
+        i = mvrange(0, mvcount(accessible)),
+        _new = mvmap(
+            i,
+            substr(
+                _raw,
+                if(i == 0, 0, tonumber(mvindex(accessible, i - 1)) + 1),
+                tonumber(mvindex(accessible, i)) - if(i == 0, 0, tonumber(mvindex(accessible, i - 1))) - 1
+            )."X"
+        ),
+        _new = mvappend(_new, substr(_raw, tonumber(max(accessible)) + 1)),
+        _raw = mvjoin(coalesce(_new, _raw), ""),
+        result = sum(result, mvcount(accessible))
+]
+| eval
+    y = mvrange(0, h),
+    _raw = mvmap(
+        y,
+        substr(_raw, y * w + 1, w)
+    )
+| table result

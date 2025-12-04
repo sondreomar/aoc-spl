@@ -1,0 +1,27 @@
+| inputaoc 2025-04.txt
+| streamstats c as y
+| eval
+    w = len(_raw) + 2,
+    _raw = printf("%010d:_%s_", y, _raw)
+| eventstats values(_raw) as _raw
+| eval
+    _raw = mvappend(
+        mvjoin(mvmap(mvrange(0, w), "_"), ""),
+        mvmap(_raw, replace(_raw, "^\d+:", "")),
+        mvjoin(mvmap(mvrange(0, w), "_"), "")
+    ),
+    i = mvrange(0, w),
+    x = mvmap(i, if(substr(mvindex(_raw, y), i, 1) == "@", i, null())),
+    neighbours = mvmap(
+        x,
+        (
+            substr(mvindex(_raw, y), x - 1, 3)
+            + substr(mvindex(_raw, y - 1), x - 1, 3)
+            + substr(mvindex(_raw, y + 1), x - 1, 3)
+        )
+    ),
+    accessible = mvmap(
+        neighbours,
+        if(len(replace(neighbours, "[^@]", "")) - 1 < 4, 1, 0)
+    )
+| stats sum(accessible)
