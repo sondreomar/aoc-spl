@@ -1,0 +1,35 @@
+#!/bin/bash
+
+echo "Waiting for Splunk to start..."
+until curl -sk https://localhost:8089 -u admin:splunkdev --max-time 5 >/dev/null; do
+  echo "Waiting for Splunk to be available..."
+  sleep 5
+done
+
+echo "Requesting Splunk auth token..."
+token=""
+while [ -z "$token" ] || [ "$token" = "null" ]; do
+  response=$(
+    curl -sk https://localhost:8089/services/authorization/tokens \
+      -H "Content-Type: application/json" \
+      -u admin:splunkdev \
+      -d name=admin \
+      -d audience=devcontainer \
+      -d output_mode=json
+  )
+  token=$(echo "$response" | jq -r '.entry[0].content.token' 2>/dev/null)
+  if [ -z "$token" ] || [ "$token" = "null" ]; then
+    echo "Token not available yet. Retrying in 5s..."
+    sleep 5
+  fi
+done
+
+echo "Token acquired."
+echo "$token"
+
+mkdir -p .vscode
+cat > .vscode/settings.json << EOF
+{
+  "splunk.commands.token": "$token"
+}
+EOF

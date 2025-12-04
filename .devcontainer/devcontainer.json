@@ -4,7 +4,7 @@
         "dockerfile": "Dockerfile",
         "context": ".."
     },
-    "postCreateCommand": "uv sync --locked",
+    "postCreateCommand": "uv sync --locked && bash .devcontainer/get_splunk_token.sh",
     "postAttachCommand": ".venv/bin/python app/bin/render_app.py",
     "mounts": [
         "source=${localWorkspaceFolder}/app,target=/opt/splunk/etc/apps/advent-of-code,type=bind,consistency=cached"
