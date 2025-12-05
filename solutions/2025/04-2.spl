@@ -44,16 +44,20 @@
         ),
         xy = mvmap(xy, if(xy in (accessible), null(), xy)),
         i = mvrange(0, mvcount(accessible)),
-        _new = mvmap(
-            i,
-            substr(
-                _raw,
-                if(i == 0, 0, tonumber(mvindex(accessible, i - 1)) + 1),
-                tonumber(mvindex(accessible, i)) - if(i == 0, 0, tonumber(mvindex(accessible, i - 1))) - 1
-            )."X"
+        _raw = mvjoin(
+            mvappend(
+                mvmap(
+                    i,
+                    substr(
+                        _raw,
+                        if(i == 0, 0, tonumber(mvindex(accessible, i - 1)) + 1),
+                        tonumber(mvindex(accessible, i)) - if(i == 0, 0, tonumber(mvindex(accessible, i - 1))) - 1
+                    )."X"
+                ),
+                substr(_raw, coalesce(tonumber(max(accessible)) + 1, 0))
+            ),
+            ""
         ),
-        _new = mvappend(_new, substr(_raw, coalesce(tonumber(max(accessible)) + 1, 0))),
-        _raw = mvjoin(_raw, ""),
         result = sum(result, mvcount(accessible))
 ]
 | eval
