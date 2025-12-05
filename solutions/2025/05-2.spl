@@ -1,0 +1,14 @@
+| inputaoc 2025-05.txt
+| rex "^(?<start>\d+)-(?<end>\d+)$"
+| fields - _raw
+| where isnotnull(start.end)
+| sort start end
+| streamstats current=false max(end)
+| eval group = if(start > 'max(end)', 1, null())
+| streamstats c(group) as group
+| stats
+    min(start) as start
+    max(end) as end
+    by group
+| eval range = end - start + 1
+| stats sum(range)

@@ -1,0 +1,7 @@
+| inputaoc 2025-05.txt
+| rex "^((?<start>\d+)-(?<end>\d+)|(?<id>\d+))$"
+| table id start end
+| eventstats values(id) as id
+| where isnotnull(start.end)
+| eval id = mvmap(id, if(id >= start and id <= end, id, null()))
+| stats dc(id)
