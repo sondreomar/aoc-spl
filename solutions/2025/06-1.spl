@@ -1,0 +1,18 @@
+| inputaoc 2025-06.txt
+| streamstats c as i
+| rex max_match=0 "((?<x>\S+))"
+| mvexpand x
+| stats
+    list(x) as x
+    by _mkv_child
+| eval
+    op = mvfilter(!isnum(x)),
+    x = mvfilter(isnum(x))
+| foreach mode=multivalue x [
+    | eval
+        result = case(
+            op == "*", coalesce(result, 1) * '<<ITEM>>',
+            op == "+", coalesce(result, 0) + '<<ITEM>>'
+        )
+]
+| stats sum(result)

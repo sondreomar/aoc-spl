@@ -1,0 +1,33 @@
+| inputaoc strip_whitespace=false 2025-06.txt
+| streamstats c as i
+| eval _raw = i.":".replace(_raw, "\s", "_")
+| stats values(_raw) as _raw
+| eval
+    _raw = mvmap(_raw, replace(_raw, "^[^:]+:", "")),
+    op = split(replace(mvindex(_raw, -1), "_+", ","), ","),
+    _raw = mvindex(_raw, 0, -2),
+    i = mvrange(0, len(mvindex(_raw, 0))),
+    x = ""
+| foreach mode=multivalue i [
+    | eval
+        x = x + " " + mvjoin(
+            mvmap(_raw, substr(_raw, '<<ITEM>>' + 1, 1)),
+            ""
+        )
+]
+| eval
+    x = replace(x, "_*(\d+)_*", "\1"),
+    x = replace(x, " _+ ", ","),
+    x = split(x, ",")
+| mvexpand x
+| eval
+    x = mvreverse(split(trim(x), " ")),
+    op = mvindex(op, _mkv_child)
+| foreach mode=multivalue x [
+    | eval
+        result = case(
+            op == "*", coalesce(result, 1) * '<<ITEM>>',
+            op == "+", coalesce(result, 0) + '<<ITEM>>'
+        )
+]
+| stats sum(result)
