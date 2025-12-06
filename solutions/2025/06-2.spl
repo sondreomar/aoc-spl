@@ -1,9 +1,7 @@
 | inputaoc strip_whitespace=false 2025-06.txt
-| streamstats c as i
-| eval _raw = i.":".replace(_raw, "\s", "_")
-| stats values(_raw) as _raw
+| eval _raw = replace(_raw, "\s", "_")
+| stats list(_raw) as _raw
 | eval
-    _raw = mvmap(_raw, replace(_raw, "^[^:]+:", "")),
     op = split(replace(mvindex(_raw, -1), "_+", ","), ","),
     _raw = mvindex(_raw, 0, -2),
     i = mvrange(0, len(mvindex(_raw, 0))),
