@@ -1,0 +1,32 @@
+| inputaoc 2025-07.txt
+| streamstats c as i
+| eval _raw = printf("%03d", i).":"._raw
+| stats values(_raw) as _raw
+| eval
+    _raw = mvmap(_raw, replace(_raw, "^[^:]+:", "")),
+    i = mvrange(0, mvcount(_raw)),
+    j = mvrange(0, len(mvindex(_raw, 0)))
+| foreach mode=multivalue i [
+    | eval
+        line = split(mvindex(_raw, '<<ITEM>>'), ""),
+        split = mvmap(
+            j,
+            case(
+                mvindex(line, j + 1) == "^" and tostring(j + 1) in (beams), j + 1,
+                mvindex(line, j - 1) == "^" and tostring(j - 1) in (beams), j - 1
+            )
+        ),
+        split_count = sum(split_count, mvcount(mvdedup(split))),
+        line = mvmap(
+            j,
+            case(
+                mvindex(line, j) != "^" and j in (beams),                   "|",
+                mvindex(line, j + 1) == "^" and tostring(j + 1) in (beams), "|",
+                mvindex(line, j - 1) == "^" and tostring(j - 1) in (beams), "|",
+                true(),                                                     mvindex(line, j)
+            )
+        ),
+        beams = mvmap(j, if(mvindex(line, j) in ("S", "|"), j, null())),
+        _new = mvappend(_new, mvjoin(line, ""))
+]
+| fields split_count *

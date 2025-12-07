@@ -1,0 +1,44 @@
+| inputaoc 2025-07.txt
+| streamstats c as i
+| eval _raw = printf("%03d", i).":"._raw
+| stats values(_raw) as _raw
+| eval
+    _raw = mvmap(_raw, replace(_raw, "^[^:]+:", "")),
+    i = mvrange(0, mvcount(_raw)),
+    j = mvrange(0, len(mvindex(_raw, 0))),
+    _raw = mvmap(_raw, replace(_raw, "(.)", "\1,")),
+    _raw = mvmap(_raw, replace(_raw, "\.", "0")),
+    _raw = mvmap(_raw, replace(_raw, "S", "1"))
+| foreach mode=multivalue i [
+    | eval
+        prev = line,
+        line = split(mvindex(_raw, '<<ITEM>>'), ","),
+        line = mvmap(
+            j,
+            if(
+                mvindex(line, j) != "^" and j in (beams),
+                mvindex(prev, j),
+                mvindex(line, j)
+            )
+        ),
+        line = mvmap(
+            j,
+            if(
+                mvindex(line, j - 1) == "^" and tostring(j - 1) in (beams),
+                sum(tonumber(mvindex(line, j)), tonumber(mvindex(prev, j - 1))),
+                mvindex(line, j)
+            )
+        ),
+        line = mvmap(
+            j,
+            if(
+                mvindex(line, j + 1) == "^" and tostring(j + 1) in (beams),
+                sum(tonumber(mvindex(line, j)), tonumber(mvindex(prev, j + 1))),
+                mvindex(line, j)
+            )
+        ),
+        beams = mvmap(j, if(match(mvindex(line, j), "^[1-9]\d*$"), j, null())),
+        _new = mvappend(_new, mvjoin(line, ","))
+]
+| eval timelines = sum(split(mvindex(_new, -1), ","))
+| fields timelines *
