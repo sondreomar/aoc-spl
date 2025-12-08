@@ -1,0 +1,94 @@
+| inputaoc 2025-08.txt
+
+``` calculate distance between all junction boxes ```
+| rename _raw as a
+| rex field=a "^(?<x1>\d+),(?<y1>\d+),(?<z1>\d+)$"
+| eventstats values(a) as b
+| mvexpand b
+| rex field=b "^(?<x2>\d+),(?<y2>\d+),(?<z2>\d+)$"
+| eval
+    connection = sha256(mvjoin(mvsort(mvappend(a, b)), "")),
+    distance = sqrt(
+        sum(
+            pow(x2 - x1, 2),
+            pow(y2 - y1, 2),
+            pow(z2 - z1, 2)
+        )
+    )
+| table a b distance connection
+
+``` sort by distance, excluding self and deduplicating connections ```
+| where distance != 0
+| sort 0 distance a b
+| dedup connection
+
+``` reduce to one result ```
+| streamstats c as i
+| eval connect = printf("%05d", i).":".a.":".b
+| stats values(connect) as connect
+| eval connect = mvmap(connect, replace(connect, "^[^:]+:", ""))
+
+``` try to connect everything within x iterations ```
+| eval
+    i = mvrange(0, 5000),
+    target = 1000
+| foreach mode=multivalue i [
+    | eval
+        i = '<<ITEM>>',
+        j = mvrange(0, max(mvcount(connections), 1)),
+        a = mvindex(split(mvindex(connect, i), ":"), 0),
+        b = mvindex(split(mvindex(connect, i), ":"), 1),
+        ab = a.":".b,
+        match = "(^|:)".ab."$",
+        ``` extend existing circuits ```
+        connections = mvmap(
+            j,
+            if(
+                a in (split(mvindex(connections, j), ":")) OR b in (split(mvindex(connections, j), ":")),
+                coalesce(mvindex(connections, j), "").":".ab,
+                mvindex(connections, j)
+            )
+        ),
+        ``` merge circuits ```
+        circuit_matches = mvmap(
+            j,
+            if(
+                match(mvindex(connections, j), match),
+                j,
+                null()
+            )
+        ),
+        connections = mvappend(
+            mvjoin(mvmap(circuit_matches, mvindex(connections, circuit_matches)), ":"),
+            mvmap(j, if(j in (circuit_matches), null(), mvindex(connections, j)))
+        ),
+        ``` add new circuits ```
+        connections = if(
+            !match(connections, match),
+            mvappend(connections, ab),
+            connections
+        ),
+        ``` keep latest connection when all boxes are connected ```
+        latest_connection = if(
+            mvcount(connections) == 1 AND mvcount(mvdedup(split(connections, ":"))) == target,
+            coalesce(latest_connection, ab),
+            latest_connection
+        ),
+        necessary_iterations = if(
+            isnotnull(latest_connection),
+            coalesce(necessary_iterations, i),
+            necessary_iterations
+        )
+]
+
+``` fail if too few iterations ```
+| where isnotnull(latest_connection)
+| require
+
+``` evaluate result from latest connection ```
+| eval
+    latest_connection = split(latest_connection, ":"),
+    ax = replace(mvindex(latest_connection, 0), ",.*$", ""),
+    bx = replace(mvindex(latest_connection, 1), ",.*$", ""),
+    result = ax * bx
+| table result
