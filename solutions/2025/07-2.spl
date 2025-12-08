@@ -41,4 +41,4 @@
         _new = mvappend(_new, mvjoin(line, ","))
 ]
 | eval timelines = sum(split(mvindex(_new, -1), ","))
-| fields timelines *
+| table timelines

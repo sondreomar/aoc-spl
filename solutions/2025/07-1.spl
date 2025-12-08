@@ -29,4 +29,4 @@
         beams = mvmap(j, if(mvindex(line, j) in ("S", "|"), j, null())),
         _new = mvappend(_new, mvjoin(line, ""))
 ]
-| fields split_count *
+| table split_count
