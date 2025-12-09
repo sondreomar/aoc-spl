@@ -66,4 +66,4 @@
         y,
         substr(_raw, y * w + 1, w)
     )
-| fields result *
+| table result
