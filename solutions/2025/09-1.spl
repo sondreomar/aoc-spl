@@ -1,0 +1,12 @@
+| inputaoc 2025-09.txt
+
+``` calculate area for each combination ```
+| rename _raw as a
+| eventstats values(a) as b
+| mvexpand b
+| rex field=a "^(?<x1>\d+),(?<y1>\d+)$"
+| rex field=b "^(?<x2>\d+),(?<y2>\d+)$"
+| eval area = (abs(x2 - x1) + 1) * (abs(y2 - y1) + 1)
+
+``` take max area ```
+| stats max(area)

@@ -1,0 +1,55 @@
+| inputaoc 2025-09.txt
+
+``` build edges ```
+| streamstats c as i
+| eval _raw = printf("%05d", i).":"._raw
+| stats values(_raw) as _raw
+| eval
+    xy = mvmap(_raw, replace(_raw, "^\d+:", "")),
+    j = mvrange(0, mvcount(xy)),
+    edges = mvmap(
+        j,
+        mvindex(xy, j).":".mvindex(xy, (j + 1) % mvcount(xy))
+    )
+
+``` expand to all axis-aligned rectangles ```
+| eval a = _raw
+| stats
+    values(_raw) as b
+    values(edges) as edges
+    by a
+| eval
+    i = mvfind(b, a),
+    a = replace(a, "^\d+:", ""),
+    b = mvindex(b, i + 1, -1),
+    b = mvmap(b, nullif(replace(b, "^\d+:", ""), ""))
+| stats
+    values(edges) as edges
+    by a b
+
+``` calculate area and overlap with edges ```
+| stats c as _ by a b edges
+| rex field=a "^(?<x1>\d+),(?<y1>\d+)$"
+| rex field=b "^(?<x2>\d+),(?<y2>\d+)$"
+| rex field=edges "^(?<sx1>\d+),(?<sy1>\d+):(?<sx2>\d+),(?<sy2>\d+)$"
+| eval
+    area = (abs(x2 - x1) + 1) * (abs(y2 - y1) + 1),
+    intersects = if(
+        (
+            !(x1 <= sx1 and x1 <= sx2 and x2 <= sx1 and x2 <= sx2) and
+            !(x1 >= sx1 and x1 >= sx2 and x2 >= sx1 and x2 >= sx2)
+        ) and (
+            !(y1 >= sy1 and y1 >= sy2 and y2 >= sy1 and y2 >= sy2) and
+            !(y1 <= sy1 and y1 <= sy2 and y2 <= sy1 and y2 <= sy2)
+        ),
+        1,
+        0
+    )
+| stats
+    first(area) as area
+    max(intersects) as intersects
+    by a b
+
+``` find largest area without intersects ```
+| where intersects == 0
+| stats max(area)
