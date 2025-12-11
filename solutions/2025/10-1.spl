@@ -1,0 +1,42 @@
+| inputaoc 2025-10.txt
+| rex max_match=0 "(\((?<x>[^\)]+)\))+"
+| rex max_match=0 "^\[(?<target>[^\]]+)\]"
+| table x target
+
+``` convert x to bitwise flags ```
+| foreach mode=multivalue x [
+    | eval
+        x_bits = mvappend(
+            x_bits,
+            tostring(sum(mvmap(split('<<ITEM>>', ","), max(pow(2, '<<ITEM>>'), 1))))
+        )
+]
+
+``` convert target to bitwise flags ```
+| eval
+    i = mvrange(0, len(target)),
+    target_bits = sum(mvmap(i, if(mvindex(split(target, ""), i) == "#", max(pow(2, i), 1), null())))
+
+``` iteratively bitwise xor all combinations until bits is 0 ```
+| eval bits = target_bits
+| foreach 1 2 3 4 5 6 7 8 9 10 [
+    | eval
+        steps = "<<FIELD>>",
+        i = mvrange(0, mvcount(bits))
+    | foreach mode=multivalue i [
+        | eval
+            bits = mvdedup(mvappend(
+                bits,
+                mvmap(
+                    x_bits,
+                    tostring(bit_xor(tonumber(mvindex(bits, '<<ITEM>>')), tonumber(x_bits)))
+                )
+            )),
+            ``` store minimum steps taken when 0 is reached ```
+            min_steps_needed = if("0" in (bits), coalesce(min_steps_needed, steps), min_steps_needed),
+            bits = if(isnotnull(min_steps_needed), null(), bits)
+    ]
+]
+
+``` sum of steps taken ```
+| stats sum(min_steps_needed)

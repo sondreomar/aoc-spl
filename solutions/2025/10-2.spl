@@ -1,0 +1,196 @@
+| inputaoc 2025-10.txt
+| rex max_match=0 "(\((?<buttons>[^\)]+)\))+"
+| rex max_match=0 "\{(?<joltages>[^\]]+)\}"
+| table joltages buttons
+
+```
+create augmented matrix [A|b] for system Ax = b
+A: which buttons affect which joltages
+b: joltage values
+```
+| eval
+    joltages = split(joltages, ","),
+    i = mvrange(0, mvcount(joltages)),
+    j = mvrange(0, mvcount(buttons))
+| foreach mode=multivalue i [
+    | eval
+        i = '<<ITEM>>',
+        b = mvmap(
+            j,
+            if(i in (split(mvindex(buttons, j), ",")), 1, 0)
+        ),
+        matrix = mvappend(
+            matrix,
+            mvjoin(mvappend(b, mvindex(joltages, i)), ",")
+        )
+]
+| table _time joltages buttons matrix
+
+``` gaussian elimination to reduce to row echelon form ```
+| eval
+    num_rows = mvcount(matrix),
+    num_cols = mvcount(split(mvindex(matrix, 0), ",")) - 1,
+    current_row = 0
+| foreach 0 1 2 3 4 5 6 7 8 9 10 11 12 13 [
+    | eval
+        col = "<<FIELD>>",
+        col = if(tonumber(col) > num_cols, null(), col)
+
+    ``` find first non-zero entry in column (pivot) ```
+    | eval
+        row = if(isnull(col) OR current_row > num_rows, null(), mvrange(current_row, num_rows)),
+        pivot_row = null()
+    | foreach mode=multivalue row [
+        | eval
+            row = split(mvindex(matrix, '<<ITEM>>'), ","),
+            pivot_row = if(
+                isnull(pivot_row),
+                if(tonumber(mvindex(row, col)) != 0, '<<ITEM>>', null()),
+                pivot_row
+            )
+    ]
+    | eval
+        pivot_cols = mvappend(
+            pivot_cols,
+            if(isnotnull(pivot_row), col, null())
+        )
+
+    ``` swap pivot row with current row ```
+    | eval
+        row = if(isnull(pivot_row), null(), mvrange(current_row, num_rows)),
+        _matrix = if(isnull(pivot_row) or current_row == 0, null(), mvindex(matrix, 0, current_row - 1))
+    | foreach mode=multivalue row [
+        | eval
+            row = '<<ITEM>>',
+            _matrix = mvappend(
+                _matrix,
+                case(
+                    row == pivot_row,   mvindex(matrix, current_row),
+                    row == current_row, mvindex(matrix, pivot_row),
+                    true(),             mvindex(matrix, row)
+                )
+            )
+    ]
+    | eval matrix = coalesce(_matrix, matrix)
+    
+    ``` eliminate entries below pivot ```
+    | eval
+        row = if(isnull(pivot_row), null(), mvrange(current_row + 1, num_rows)),
+        _matrix = if(isnull(pivot_row), null(), mvindex(matrix, 0, current_row))
+    | foreach mode=multivalue row [
+        | eval
+            row = split(mvindex(matrix, '<<ITEM>>'), ","),
+            cur = split(mvindex(matrix, current_row), ","),
+            factor = mvindex(row, col),
+            pivot = mvindex(cur, col),
+            j = mvrange(0, num_cols + 1),
+            _matrix = mvappend(
+                _matrix,
+                if(
+                    tonumber(factor) != 0,
+                    mvjoin(mvmap(j, if(j < col, mvindex(row, j), tonumber(mvindex(row, j)) * pivot - tonumber(mvindex(cur, j)) * factor)), ","),
+                    mvjoin(row, ",")
+                )
+            )
+    ]
+    | eval matrix = coalesce(_matrix, matrix)
+
+    ``` advance to next row if pivot was found ```
+    | eval
+        current_row = if(isnotnull(pivot_row), current_row + 1, current_row)
+]
+| table joltages buttons pivot_cols matrix
+
+``` identify free variables (unpivoted columns) and generate values to try ```
+| eval
+    i = mvrange(0, mvcount(buttons)),
+    free_vars = mvmap(i, if(NOT i in (pivot_cols), i, null())),
+    num_free = coalesce(mvcount(free_vars), 0),
+    max_joltage = max(joltages),
+    v2_limit = 30,
+    v3_limit = 41,
+    v1 = case(
+        num_free == 0, "_",
+        num_free == 1, mvrange(0, 3 * max_joltage),
+        num_free == 2, mvrange(0, min(v2_limit, max_joltage)),
+        num_free == 3, mvrange(0, min(v3_limit, max_joltage))
+    ),
+    v2 = case(
+        num_free <= 1, "_",
+        num_free == 2, mvrange(0, min(v2_limit, max_joltage)),
+        num_free == 3, mvrange(0, min(v3_limit, max_joltage))
+    ),
+    v3 = case(
+        num_free <= 2, "_",
+        num_free == 3, mvrange(0, min(v3_limit, max_joltage))
+    )
+
+``` expand machines to one event for each free variable combination ```
+| foreach joltages buttons pivot_cols matrix free_vars [
+    | eval <<FIELD>> = mvjoin('<<FIELD>>', ";")
+]
+| eval id = sha256(mvjoin(joltages, ",").":".mvjoin(buttons, ";"))
+| stats
+    first(joltages) as joltages
+    first(buttons) as buttons
+    first(pivot_cols) as pivot_cols
+    first(matrix) as matrix
+    first(free_vars) as free_vars
+    by id v1 v2 v3
+| foreach joltages buttons pivot_cols matrix free_vars [
+    | eval <<FIELD>> = split('<<FIELD>>', ";")
+]
+
+``` solve for pivot variables given free values (back-substitution) ```
+| eval
+    free_vals = mvappend(nullif(v1, "_"), nullif(v2, "_"), nullif(v3, "_")),
+    i = mvrange(0, mvcount(buttons)),
+    solution = mvmap(
+        i,
+        if(
+            i in (free_vars),
+            tonumber(mvindex(free_vals, mvfind(free_vars, i))),
+            0
+        )
+    ),
+    i = mvreverse(mvrange(0, mvcount(pivot_cols)))
+| foreach mode=multivalue i [
+    | eval
+        i = if(isnull(solution), null(), '<<ITEM>>'),
+        row = if(isnull(i), null(), split(mvindex(matrix, i), ",")),
+        col = if(isnull(i), null(), tonumber(mvindex(pivot_cols, i))),
+        pivot = if(isnull(i), null(), tonumber(mvindex(row, col))),
+        total = if(isnull(i), null(), tonumber(mvindex(row, -1))),
+        j = mvrange(col + 1, mvcount(buttons)),
+        total = if(isnull(i), null(), total - coalesce(sum(mvmap(j, tonumber(mvindex(row, j)) * tonumber(mvindex(solution, j)))), 0)),
+        value = if(isnull(i), null(), total / pivot),
+        solution = if(
+            isnull(i) OR pivot == 0 OR round(value) != value OR value < 0,
+            null(),
+            mvappend(
+                if(col == 0, null(), mvindex(solution, 0, col - 1)),
+                tostring(round(value)),
+                mvindex(solution, col + 1, -1)
+            )
+        )
+]
+| table id joltages buttons pivot_cols matrix free_vars free_vals solution
+
+``` validate remaining solutions ```
+| where isnotnull(solution)
+| eval
+    i = mvrange(0, mvcount(solution)),
+    j = mvrange(0, mvcount(joltages))
+| foreach mode=multivalue i [
+    | eval
+        x = tonumber(mvindex(solution, '<<ITEM>>')),
+        b = split(mvindex(buttons, '<<ITEM>>'), ","),
+        result = mvmap(j, coalesce(tonumber(mvindex(result, j)), 0) + if(j in (b), x, 0))
+]
+| table id joltages buttons pivot_cols matrix free_vars free_vals solution result
+| where mvjoin(result, ",") == mvjoin(joltages, ",")
+
+``` find minimum buttons pressed per machine, then total ```
+| eval buttons_pressed = sum(solution)
+| stats min(buttons_pressed) by id
+| stats sum(min(buttons_pressed))
