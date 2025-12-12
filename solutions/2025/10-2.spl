@@ -96,8 +96,7 @@ b: joltage values
     | eval matrix = coalesce(_matrix, matrix)
 
     ``` advance to next row if pivot was found ```
-    | eval
-        current_row = if(isnotnull(pivot_row), current_row + 1, current_row)
+    | eval current_row = if(isnotnull(pivot_row), current_row + 1, current_row)
 ]
 | table joltages buttons pivot_cols matrix
 
