@@ -1,0 +1,98 @@
+| inputaoc 2025-11.txt
+| rex "^(?<src>\w+): (?<dst>.*)"
+
+``` find all connections ```
+| eval dst = split(dst, " ")
+| mvexpand dst
+| eval connection = src.":".dst
+| stats values(connection) as connections
+
+```
+create fields foreach can iterate over
+- assumes any path can be completed in 'mvcount(connections)' steps
+- assumes paths always move forward
+```
+| eval i = mvrange(0, 38)
+| mvexpand i
+| eval i.{i} = i
+| stats
+    first(i.*) as i.*
+    values(connections) as connections
+
+``` build paths ```
+| eval paths = "svr,0,0,1"
+| foreach i.* [
+    | fields - i.*
+    | eval
+        j = mvrange(0, mvcount(paths)),
+        new_paths = null()
+    | foreach mode=multivalue j [
+        | eval
+            path = mvindex(paths, '<<ITEM>>'),
+            kv = split(path, ","),
+            src = mvindex(kv, 0),
+            dac = tonumber(mvindex(kv, 1)),
+            fft = tonumber(mvindex(kv, 2)),
+            count = tonumber(mvindex(kv, 3)),
+            next = mvmap(
+                connections,
+                if(match(connections, "^".src.":"), replace(connections, "^.*:", ""), null())
+            ),
+            new_paths = mvappend(
+                new_paths,
+                mvmap(
+                    next,
+                    printf(
+                        "%s,%d,%d,%d",
+                        next,
+                        if(next == "dac", 1, dac),
+                        if(next == "fft", 1, fft),
+                        count
+                    )
+                )
+            )
+    ]
+    | eval
+        paths = coalesce(new_paths, paths),
+        new_paths = null()
+    
+    ``` merge paths ```
+    | eval states = mvdedup(mvmap(paths, replace(paths, ",\d+$", "")))
+    | foreach mode=multivalue states [
+        | eval
+            state = '<<ITEM>>',
+            total = sum(
+                mvmap(
+                    paths,
+                    if(
+                        state == replace(paths, ",\d+$", ""),
+                        tonumber(replace(paths, "^.*,(\d+)$", "\1")),
+                        0
+                    )
+                )
+            ),
+            merged_paths = mvappend(merged_paths, state.",".total)
+    ]
+    | eval
+        paths = coalesce(merged_paths, paths),
+        merged_paths = null()
+    
+    | eval
+        ``` move completed paths to done and prune remaining paths ```
+        done = mvappend(done, mvmap(paths, if(match(paths, "^out"), paths, null()))),
+        paths = mvmap(paths, if(match(paths, "^out"), null(), paths))
+]
+
+``` sum paths that reached 'out' with both dac and fft visited ```
+| eval
+    result = sum(
+        mvmap(
+            done,
+            if(
+                match(done, "^out,1,1,"),
+                tonumber(replace(done, "^.*,(\d+)$", "\1")),
+                0
+            )
+        )
+    )
+| table result

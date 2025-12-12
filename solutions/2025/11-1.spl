@@ -1,0 +1,47 @@
+| inputaoc 2025-11.txt
+| rex "^(?<src>\w+): (?<dst>.*)"
+
+``` find all connections ```
+| eval dst = split(dst, " ")
+| mvexpand dst
+| eval connection = src.":".dst
+| stats values(connection) as connections
+
+```
+create fields foreach can iterate over
+- assumes any path can be completed in 'mvcount(connections)' steps
+- assumes paths always move forward
+```
+| eval i = mvrange(0, mvcount(connections))
+| mvexpand i
+| eval i.{i} = i
+| stats
+    first(i.*) as i.*
+    values(connections) as connections
+
+``` build paths ```
+| eval paths = "you"
+| foreach i.* [
+    | fields - i.*
+    | eval
+        j = mvrange(0, mvcount(paths)),
+        prev = paths
+    | foreach mode=multivalue j [
+        | eval
+            j = '<<ITEM>>',
+            path = mvindex(paths, j),
+            src = mvindex(split(path, ","), -1),
+            path = mvmap(
+                connections,
+                if(match(connections, "^".src.":"), path.",".replace(connections, "^.*:", ""), null())
+            ),
+            paths = mvdedup(mvappend(paths, path))
+    ]
+    | eval
+        ``` move completed paths to done and prune remaining paths ```
+        done = mvappend(done, mvmap(paths, if(match(paths, "out$"), paths, null()))),
+        paths = mvmap(paths, if(match(paths, "out$") OR paths in (prev), null(), paths))
+]
+
+``` count distinct completed paths ```
+| stats dc(done)
