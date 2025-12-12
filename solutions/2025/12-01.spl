@@ -1,0 +1,34 @@
+| inputaoc 2025-12.txt
+| rex "^(?<idx>[^:]+):"
+| streamstats c(idx) as id
+| filldown idx
+| rex "^(?<shape>[\#\.]+)"
+| rex "(?<x>\d+)x(?<y>\d+):\s(?<amounts>[\s\d]+)"
+| stats
+    list(shape) as shape
+    list(amounts) as amounts
+    first(x) as x
+    first(y) as y
+    by id idx
+| eval
+    amounts = split(amounts, " "),
+    shape = mvjoin(shape, ""),
+    size = len(replace(shape, "\.", "")),
+    area = x * y
+
+``` combine region and shape data  ```
+| eventstats
+    list(shape) as shapes
+    list(size) as sizes
+| where isnotnull(area)
+| rename idx as region
+| table id region area amounts shapes sizes
+
+``` prune regions below minimum required size ```
+| eval
+    i = mvrange(0, mvcount(amounts)),
+    min_size = sum(mvmap(i, tonumber(mvindex(amounts, i)) * tonumber(mvindex(sizes, i))))
+| where min_size < area
+
+``` apparently pruning is all you need ¯\_(ツ)_/¯ ```
+| stats c
