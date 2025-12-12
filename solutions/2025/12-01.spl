@@ -28,7 +28,7 @@
 | eval
     i = mvrange(0, mvcount(amounts)),
     min_size = sum(mvmap(i, tonumber(mvindex(amounts, i)) * tonumber(mvindex(sizes, i))))
-| where min_size < area
+| where area >= min_size
 
 ``` apparently pruning is all you need ¯\_(ツ)_/¯ ```
 | stats c
