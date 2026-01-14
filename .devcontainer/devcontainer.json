@@ -32,6 +32,7 @@
                     "/.venv/bin/python3"
                 ],
                 "splunk.spec.FilePath": "/opt/splunk/etc/system/README/",
+                "splunk.search.searchOutputMode": "json",
                 "splunk.commands.splunkRestUrl": "https://localhost:8089",
                 "splunk.commands.enableCertificateVerification": false,
                 "terminal.integrated.fontFamily": "MesloLGS NF"
