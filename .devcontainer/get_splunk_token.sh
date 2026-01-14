@@ -1,5 +1,4 @@
 #!/bin/bash
-echo "Waiting for Splunk to start..."
 until curl -sk https://localhost:8089 -u admin:$SPLUNK_PASSWORD --max-time 5 >/dev/null; do
   echo "Waiting for Splunk to be available..."
   sleep 5
@@ -13,7 +12,7 @@ while [ -z "$token" ] || [ "$token" = "null" ]; do
       -H "Content-Type: application/json" \
       -u admin:$SPLUNK_PASSWORD \
       -d name=admin \
-      -d audience=devcontainer \
+      -d audience=vscode \
       -d output_mode=json
   )
   token=$(echo "$response" | jq -r '.entry[0].content.token' 2>/dev/null)
@@ -24,7 +23,6 @@ while [ -z "$token" ] || [ "$token" = "null" ]; do
 done
 
 echo "Token acquired."
-echo "$token"
 
 mkdir -p .vscode
 cat > .vscode/settings.json << EOF
