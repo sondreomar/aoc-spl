@@ -29,7 +29,8 @@
                 "splunk.commands.enableCertificateVerification": false,
                 "[splunk_search]": {
                     "editor.tabSize": 4
-                }
+                },
+                "terminal.integrated.fontFamily": "MesloLGS NF"
             },
             "extensions": [
                 "ms-azuretools.vscode-docker",
