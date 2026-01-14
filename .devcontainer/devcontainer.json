@@ -17,13 +17,9 @@
         "vscode": {
             "settings": {
                 "splunk.spec.FilePath": "/opt/splunk/etc/system/README/",
-                "python.defaultInterpreterPath": "/opt/splunk/bin/python3",
+                "python.defaultInterpreterPath": "/.venv/bin/python3",
                 "ruff.interpreter": [
-                    "/opt/splunk/bin/python3"
-                ],
-                "python.analysis.extraPaths": [
-                    ".venv/lib/python3.12/site-packages/",
-                    "app/bin/lib/"
+                    "/.venv/bin/python3"
                 ],
                 "splunk.commands.splunkRestUrl": "https://localhost:8089",
                 "splunk.commands.enableCertificateVerification": false,
