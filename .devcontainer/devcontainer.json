@@ -1,8 +1,7 @@
 {
     "name": "advent-of-code-spl",
     "build": {
-        "dockerfile": "Dockerfile",
-        "context": ".."
+        "dockerfile": "Dockerfile"
     },
     "postCreateCommand": "bash .devcontainer/post_create.sh",
     "postAttachCommand": ".venv/bin/python app/bin/render_app.py",
