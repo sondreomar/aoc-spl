@@ -7,8 +7,16 @@
     "postCreateCommand": "bash .devcontainer/post_create.sh",
     "postAttachCommand": ".venv/bin/python app/bin/render_app.py",
     "mounts": [
-        "source=${localWorkspaceFolder}/app,target=/opt/splunk/etc/apps/advent-of-code,type=bind,consistency=cached",
-        "source=${localEnv:HOME}/.config/gh,target=/tmp/gh-config-host,type=bind,readonly"
+        {
+            "source": "${localWorkspaceFolder}/app",
+            "target": "/opt/splunk/etc/apps/advent-of-code",
+            "type": "bind"
+        },
+        {
+            "source": "${localEnv:HOME}/.config/gh",
+            "target": "/tmp/gh-config-host",
+            "type": "bind"
+        }
     ],
     "features": {
         "ghcr.io/devcontainers/features/github-cli": {}
